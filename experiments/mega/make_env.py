@@ -3,7 +3,7 @@ import gym, numpy as np
 from envs.customfetch.custom_fetch import PushEnv, SlideEnv, PickPlaceEnv, GoalType, StackEnv, PushLeft, PushRight, SlideNEnv
 from envs.customfetch.custom_hand import HandBlockEnv, HandPenEnv, HandEggEnv, HandReachFullEnv
 from envs.customfetch.epsilon_wrapper import EpsilonWrapper
-from envs.sibrivalry.toy_maze import PointMaze2D, SimpleMazeEnv
+from envs.sibrivalry.toy_maze import PointMaze2D, SimpleMazeEnv, Navigation2d
 from envs.sibrivalry.ant_maze import AntMazeEnv
 from envs.goalgan.ant_maze import AntMazeEnv as GGAntMaze
 try:
@@ -29,6 +29,9 @@ def make_env(args):
   elif 'simplemaze' in args.env.lower():
     env_fn = lambda: SimpleMazeEnv()
     eval_env_fn = lambda: SimpleMazeEnv(test=True)
+  elif 'navigation2d' in args.env.lower():
+    env_fn = lambda: Navigation2d()
+    eval_env_fn = lambda: Navigation2d(test=True)
   elif 'moat' in args.env.lower():
     env_fn = lambda: make_moat_env(slow_factor=args.slow_factor)
     eval_env_fn = lambda: make_moat_env(slow_factor=args.slow_factor)

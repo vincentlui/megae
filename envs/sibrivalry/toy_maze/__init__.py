@@ -207,3 +207,87 @@ class PointMaze2D(gym.GoalEnv):
   def compute_reward(self, achieved_goal, desired_goal, info):
     d = np.linalg.norm(achieved_goal - desired_goal, axis=-1)
     return -(d >= self.dist_threshold).astype(np.float32)
+
+
+class Navigation2d(gym.GoalEnv):
+  """Wraps the Sibling Rivalry 2D point maze in a gym goal env.
+  Keeps the first visit done and uses -1/0 rewards.
+  """
+  def __init__(self, test=False):
+    super().__init__()
+    self._env = Env(n=50, maze_type='corridor_1', use_antigoal=False, ddiff=False, ignore_reset_start=True)
+    self.maze = self._env.maze
+    self.dist_threshold = 0.15
+
+    self.action_space = gym.spaces.Box(-0.05, 0.05, (2, ))
+    observation_space = gym.spaces.Box(-np.inf, np.inf, (2, ))
+    goal_space = gym.spaces.Box(-np.inf, np.inf, (2, ))
+    self.observation_space = gym.spaces.Dict({
+        'observation': observation_space,
+        'desired_goal': goal_space,
+        'achieved_goal': goal_space
+    })
+
+    self.s_xy = np.array(self.maze.sample_start())
+    self.g_xy = np.array(self.maze.sample_goal(min_wall_dist=0.025 + self.dist_threshold))
+    self.max_steps = 50
+    self.num_steps = 0
+    self.test = test
+
+  def seed(self, seed=None):
+    return self.maze.seed(seed=seed)
+
+  def step(self, action):
+    try:
+      s_xy = np.array(self.maze.move(tuple(self.s_xy), tuple(action)))
+    except:
+      print('failed to move', tuple(self.s_xy), tuple(action))
+      raise
+
+    self.s_xy = s_xy
+    reward = self.compute_reward(s_xy, self.g_xy, None)
+    info = {}
+    self.num_steps += 1
+
+    if self.test:
+      done = np.allclose(0., reward)
+      info['is_success'] = done
+    else:
+      done = False
+      info['is_success'] = np.allclose(0., reward)
+
+    if self.num_steps >= self.max_steps and not done:
+      done = True
+      info['TimeLimit.truncated'] = True
+
+    obs = {
+        'observation': s_xy,
+        'achieved_goal': s_xy,
+        'desired_goal': self.g_xy,
+    }
+
+    return obs, reward, done, info
+
+  def reset(self):
+    self.num_steps = 0
+    s_xy = np.array(self.maze.sample_start())
+    self.s_xy = s_xy
+    g_xy = np.array(self.maze.sample_goal(min_wall_dist=0.025 + self.dist_threshold))
+    self.g_xy = g_xy
+    return {
+        'observation': s_xy,
+        'achieved_goal': s_xy,
+        'desired_goal': g_xy,
+    }
+
+  def render(self, ax=None):
+    if ax is None:
+      _, ax = matplotlib.pyplot.subplots(1, 1, figsize=(5, 4))
+    for x, y in self.maze._walls:
+      ax.plot(x, y, 'k-')
+    ax.plot(self.s_xy[0],self.s_xy[1],'rx')
+    ax.plot(self.g_xy[0], self.g_xy[1], 'yx')
+
+  def compute_reward(self, achieved_goal, desired_goal, info):
+    d = np.linalg.norm(achieved_goal - desired_goal, axis=-1)
+    return -(d >= self.dist_threshold).astype(np.float32)
