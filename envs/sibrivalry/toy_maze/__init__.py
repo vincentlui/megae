@@ -215,7 +215,7 @@ class Navigation2d(gym.GoalEnv):
   """
   def __init__(self, test=False):
     super().__init__()
-    self._env = Env(n=50, maze_type='corridor_3', use_antigoal=False, ddiff=False, ignore_reset_start=True)
+    self._env = Env(n=50, maze_type='corridor_5', use_antigoal=False, ddiff=False, ignore_reset_start=True)
     self.maze = self._env.maze
     self.dist_threshold = 0.15
 
