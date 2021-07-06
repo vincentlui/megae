@@ -207,7 +207,7 @@ def main(args):
     bg_buffer = agent.replay_buffer.buffer.BUFF.buffer_bg
 
     # EVALUATE
-    res = np.mean(agent.eval(num_episodes=1).rewards)
+    res = np.mean(agent.eval(num_episodes=30).rewards)
     agent.logger.log_color('Initial test reward (30 eps):', '{:.2f}'.format(res))
     render=False
     for epoch in range(int(args.max_steps // args.epoch_len)):
@@ -225,7 +225,7 @@ def main(args):
         agent.logger.add_embedding('last_bgs', bg_buffer.get_batch(last_idxs))
 
       # EVALUATE
-      res = np.mean(agent.eval(num_episodes=1).rewards)
+      res = np.mean(agent.eval(num_episodes=30).rewards)
       agent.logger.log_color('Test reward (30 eps):', '{:.2f}'.format(res))
       agent.logger.log_color('Epoch time:', '{:.2f}'.format(time.time() - t), color='yellow')
 
