@@ -56,24 +56,45 @@ default_ddpg_config = lambda: AnnotatedAttrDict(
 )
 
 def megae_config():
-  config = default_ddpg_config()
-  config.gamma = 0.98
-  config.actor_lr = 1e-3
-  config.critic_lr = 1e-3
-  config.actor_weight_decay = 0.
-  config.action_l2_regularization = 1e-1
-  config.target_network_update_freq = 40
-  config.target_network_update_frac = 0.05
-  config.optimize_every = 1
-  config.batch_size = 32
-  config.warm_up = 49
-  config.initial_explore = 500
-  config.replay_size = int(1e6)
-  config.clip_target_range = (-50.,0.)
-  config.action_noise = 0.1
-  config.eexplore = 0.1
-  config.go_eexplore = 0.1
-  config.go_reset_percent = 0.
-  config.her = 'rfaab_1_4_3_1_1'
-  config.grad_value_clipping = 5.
-  return config
+    config = default_ddpg_config()
+    config.gamma = 0.98
+    config.actor_lr = 1e-3
+    config.critic_lr = 1e-3
+    config.actor_weight_decay = 0.
+    config.action_l2_regularization = 1e-1
+    config.target_network_update_freq = 40
+    config.target_network_update_frac = 0.05
+    config.optimize_every = 1
+    config.batch_size = 2000
+    config.warm_up = 2500
+    config.initial_explore = 5000
+    config.replay_size = int(1e6)
+    config.clip_target_range = (-50., 0.)
+    config.action_noise = 0.1
+    config.eexplore = 0.1
+    config.go_eexplore = 0.1
+    config.go_reset_percent = 0.
+    config.her = 'rfaab_1_4_3_1_1'
+    config.grad_value_clipping = 5.
+    return config
+      # config = default_ddpg_config()
+      # config.gamma = 0.98
+      # config.actor_lr = 1e-3
+      # config.critic_lr = 1e-3
+      # config.actor_weight_decay = 0.
+      # config.action_l2_regularization = 1e-1
+      # config.target_network_update_freq = 40
+      # config.target_network_update_frac = 0.05
+      # config.optimize_every = 1
+      # config.batch_size = 32
+      # config.warm_up = 49
+      # config.initial_explore = 500
+      # config.replay_size = int(1e6)
+      # config.clip_target_range = (-50.,0.)
+      # config.action_noise = 0.1
+      # config.eexplore = 0.1
+      # config.go_eexplore = 0.1
+      # config.go_reset_percent = 0.
+      # config.her = 'rfaab_1_4_3_1_1'
+      # config.grad_value_clipping = 5.
+      # return config

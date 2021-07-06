@@ -26,7 +26,6 @@ class MegaeTrain(mrl.Module):
         env = self.env
         state = env.state
         context = self.get_context(state)
-        print(self.ag_curiosity.current_goals)
 
         for _ in range(num_steps // env.num_envs):
             if self.ag_curiosity.is_explore.any():

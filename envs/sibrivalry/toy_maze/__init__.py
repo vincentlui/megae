@@ -219,7 +219,7 @@ class Navigation2d(gym.GoalEnv):
     self.maze = self._env.maze
     self.dist_threshold = 0.15
 
-    self.action_space = gym.spaces.Box(-0.1, 0.1, (2, ))
+    self.action_space = gym.spaces.Box(-0.5, 0.5, (2, ))
     observation_space = gym.spaces.Box(-np.inf, np.inf, (2, ))
     goal_space = gym.spaces.Box(-np.inf, np.inf, (2, ))
     self.observation_space = gym.spaces.Dict({
