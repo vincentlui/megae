@@ -348,7 +348,7 @@ class DensityMegaeCuriosity(MegaeCuriosity):
           # density_module._optimize(force=True)
         return np.ones((num_envs, self.num_context)) / self.num_context
 
-      ag_tile = np.tile(ag, (num_envs, self.num_context)).reshape(num_envs, self.num_context, -1)
+      ag_tile = np.tile(ag, (self.num_context, )).reshape(num_envs, self.num_context, -1)
       context_states = ag_tile + self.context_states
       flattened_context_states = context_states.reshape(num_envs * self.num_context, -1)
       density_context_states = density_module.evaluate_log_density(flattened_context_states)\
