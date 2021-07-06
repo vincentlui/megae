@@ -243,7 +243,7 @@ if __name__ == '__main__':
   parser.add_argument('--max_steps', default=5000000, type=int, help="maximum number of training steps")
   parser.add_argument('--alg', default='DDPG', type=str, help='algorithm to use (DDPG or TD3)')
   parser.add_argument(
-      '--layers', nargs='+', default=(32,32), type=int, help='sizes of layers for actor/critic networks')
+      '--layers', nargs='+', default=(512,512,512), type=int, help='sizes of layers for actor/critic networks')
   parser.add_argument('--noise_type', default='Gaussian', type=str, help='type of action noise (Gaussian or OU)')
   parser.add_argument('--tb', default='', type=str, help='a tag for the agent name / tensorboard')
   parser.add_argument('--epoch_len', default=5000, type=int, help='number of steps between evals')
