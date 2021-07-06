@@ -126,3 +126,6 @@ dmypy.json
 
 .vscode
 slurm_output/
+
+#log
+experiments/megae/log/

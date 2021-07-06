@@ -8,8 +8,17 @@ import gym
 import numpy as np
 import torch.nn as nn
 
+from mrl.megae.curiosity import DensityMegaeCuriosity
+from mrl.megae.policy import ExplorationActorPolicy
+from mrl.megae.train import MegaeTrain
+from mrl.megae.algo import DDPG2
+from mrl.megae.config import megae_config
+from mrl.megae.replay_buffer import MegaeBuffer
+from mrl.megae.normalizer import Normalizer, MeanStdNormalizer
+
+
 # 2. Get default config and update any defaults (this automatically updates the argparse defaults)
-config = protoge_config()
+config = megae_config()
 
 # 3. Make changes to the argparse below
 
@@ -33,13 +42,18 @@ def main(args):
   # 5. Setup / add basic modules to the config
   config.update(
       dict(
-          trainer=StandardTrain(),
+          trainer=MegaeTrain(),
           evaluation=EpisodicEval(),
-          policy=ActorPolicy(),
+          policy=ExplorationActorPolicy(), #ActorPolicy(),
+          policy_expl=ExplorationActorPolicy(),
           logger=Logger(),
           state_normalizer=Normalizer(MeanStdNormalizer()),
-          replay=OnlineHERBuffer(),
+          replay=MegaeBuffer(),
       ))
+
+  state_normalizer2 = Normalizer(MeanStdNormalizer()) # Normalize context states
+  state_normalizer2.module_name = 'state_normalizer_expl'
+  config.state_normalizer2 = state_normalizer2
 
   config.prioritized_mode = args.prioritized_mode
   if config.prioritized_mode == 'mep':
@@ -65,6 +79,14 @@ def main(args):
       config.ag_curiosity = QAchievedGoalCuriosity(max_steps = args.env_max_step, randomize=True, num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff, keep_dg_percent=args.keep_dg_percent)
     elif args.ag_curiosity == 'minkde':
       config.ag_curiosity = DensityAchievedGoalCuriosity(max_steps = args.env_max_step, num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff, keep_dg_percent=args.keep_dg_percent)
+    elif args.ag_curiosity == 'megae':
+      config.ag_curiosity = DensityMegaeCuriosity(max_steps=args.env_max_step,
+                                                   num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff,
+                                                   keep_dg_percent=args.keep_dg_percent,
+                                                  exploration_percent=0.8,
+                                                  num_context=args.num_context,
+                                                  context_var=args.var_context,
+                                                  )
     elif args.ag_curiosity == 'minrnd':
       config.ag_curiosity = DensityAchievedGoalCuriosity('ag_rnd', max_steps = args.env_max_step, num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff, keep_dg_percent=args.keep_dg_percent)
     elif args.ag_curiosity == 'minflow':
@@ -90,7 +112,8 @@ def main(args):
   config.action_noise = ContinuousActionNoise(noise_type, std=ConstantSchedule(args.action_noise))
 
   if args.alg.lower() == 'ddpg': 
-    config.algorithm = DDPG()
+    config.algorithm1 = DDPG2('algorithm1', 'actor', 'critic')
+    config.algorithm2 = DDPG2('algorithm2', 'expl_actor', 'expl_critic', is_explore=True)
   elif args.alg.lower() == 'td3':
     config.algorithm = TD3()
     config.target_network_update_freq *= 2
@@ -122,8 +145,16 @@ def main(args):
   else:
     config.actor = PytorchModel('actor',
                                 lambda: Actor(FCBody(e.state_dim + e.goal_dim, args.layers, nn.LayerNorm, make_activ(config.activ)), e.action_dim, e.max_action))
+    config.actor2 = PytorchModel('expl_actor',
+                                lambda: Actor(
+                                  FCBody(e.state_dim + args.num_context, args.layers, nn.LayerNorm, make_activ(config.activ)),
+                                  e.action_dim, e.max_action))
     config.critic = PytorchModel('critic',
                                 lambda: Critic(FCBody(e.state_dim + e.goal_dim + e.action_dim, args.layers, nn.LayerNorm, make_activ(config.activ)), 1))
+    config.critic2 = PytorchModel('expl_critic',
+                                 lambda: Critic(
+                                   FCBody(e.state_dim + args.num_context + e.action_dim, args.layers, nn.LayerNorm,
+                                          make_activ(config.activ)), 1))
     if args.alg.lower() == 'td3':
       config.critic2 = PytorchModel('critic2',
         lambda: Critic(FCBody(e.state_dim + e.goal_dim + e.action_dim, args.layers, nn.LayerNorm, make_activ(config.activ)), 1))
@@ -178,10 +209,12 @@ def main(args):
     # EVALUATE
     res = np.mean(agent.eval(num_episodes=1).rewards)
     agent.logger.log_color('Initial test reward (30 eps):', '{:.2f}'.format(res))
-
+    render=False
     for epoch in range(int(args.max_steps // args.epoch_len)):
       t = time.time()
-      agent.train(num_steps=args.epoch_len, render=False)
+      if epoch > 15:
+        render=True
+      agent.train(num_steps=args.epoch_len, render=render)
 
       # VIZUALIZE GOALS
       if args.save_embeddings:
@@ -250,6 +283,10 @@ if __name__ == '__main__':
   parser.add_argument('--keep_dg_percent', default=-1e-1, type=float, help='Percentage of time to keep desired goals')
   parser.add_argument('--prioritized_mode', default='none', type=str, help='Modes for prioritized replay: none, mep (default: none)')
   parser.add_argument('--no_ag_kde', action='store_true', help="don't track ag kde")
+
+  # Megae args
+  parser.add_argument('--num_context', default=20, type=int, help='number of context states density for exploration policy')
+  parser.add_argument('--var_context', default=0.5, type=float, help='variance of context states')
 
   parser = add_config_args(parser, config)
   args = parser.parse_args()

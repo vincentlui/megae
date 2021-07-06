@@ -215,11 +215,11 @@ class Navigation2d(gym.GoalEnv):
   """
   def __init__(self, test=False):
     super().__init__()
-    self._env = Env(n=50, maze_type='corridor_1', use_antigoal=False, ddiff=False, ignore_reset_start=True)
+    self._env = Env(n=50, maze_type='corridor_3', use_antigoal=False, ddiff=False, ignore_reset_start=True)
     self.maze = self._env.maze
     self.dist_threshold = 0.15
 
-    self.action_space = gym.spaces.Box(-0.05, 0.05, (2, ))
+    self.action_space = gym.spaces.Box(-0.1, 0.1, (2, ))
     observation_space = gym.spaces.Box(-np.inf, np.inf, (2, ))
     goal_space = gym.spaces.Box(-np.inf, np.inf, (2, ))
     self.observation_space = gym.spaces.Dict({
@@ -233,6 +233,9 @@ class Navigation2d(gym.GoalEnv):
     self.max_steps = 50
     self.num_steps = 0
     self.test = test
+
+    self.ax = None
+    self.plotpos = None
 
   def seed(self, seed=None):
     return self.maze.seed(seed=seed)
@@ -280,13 +283,21 @@ class Navigation2d(gym.GoalEnv):
         'desired_goal': g_xy,
     }
 
-  def render(self, ax=None):
-    if ax is None:
-      _, ax = matplotlib.pyplot.subplots(1, 1, figsize=(5, 4))
-    for x, y in self.maze._walls:
-      ax.plot(x, y, 'k-')
-    ax.plot(self.s_xy[0],self.s_xy[1],'rx')
-    ax.plot(self.g_xy[0], self.g_xy[1], 'yx')
+  def render(self, **kwargs):
+    if self.ax is None:
+      _, self.ax = matplotlib.pyplot.subplots(1, 1, figsize=(5, 4))
+      for x, y in self.maze._walls:
+        self.ax.plot(x, y, 'k-')
+      self.plotgoal, = self.ax.plot(self.g_xy[0], self.g_xy[1], 'rx')
+      self.plotpos, = self.ax.plot(self.s_xy[0],self.s_xy[1],'bx')
+    else:
+      self.plotpos.set_xdata(self.s_xy[0])
+      self.plotpos.set_ydata(self.s_xy[1])
+      # self.ax.plot(self.s_xy[0], self.s_xy[1], 'bx')
+      self.plotgoal.set_xdata(self.g_xy[0])
+      self.plotgoal.set_ydata(self.g_xy[1])
+    matplotlib.pyplot.draw()
+    matplotlib.pyplot.pause(1e-6)
 
   def compute_reward(self, achieved_goal, desired_goal, info):
     d = np.linalg.norm(achieved_goal - desired_goal, axis=-1)
