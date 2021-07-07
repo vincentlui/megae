@@ -51,9 +51,9 @@ def main(args):
           replay=MegaeBuffer(),
       ))
 
-  state_normalizer2 = Normalizer(MeanStdNormalizer()) # Normalize context states
-  state_normalizer2.module_name = 'state_normalizer_expl'
-  config.state_normalizer2 = state_normalizer2
+  # state_normalizer2 = Normalizer(MeanStdNormalizer()) # Normalize context states
+  # state_normalizer2.module_name = 'state_normalizer_expl'
+  # config.state_normalizer2 = state_normalizer2
 
   config.prioritized_mode = args.prioritized_mode
   if config.prioritized_mode == 'mep':
@@ -83,7 +83,7 @@ def main(args):
       config.ag_curiosity = DensityMegaeCuriosity(max_steps=args.env_max_step,
                                                    num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff,
                                                    keep_dg_percent=args.keep_dg_percent,
-                                                  exploration_percent=0.8,
+                                                  exploration_percent=args.exploration_percent,
                                                   num_context=args.num_context,
                                                   context_var=args.var_context,
                                                   )
@@ -287,6 +287,7 @@ if __name__ == '__main__':
   # Megae args
   parser.add_argument('--num_context', default=20, type=int, help='number of context states density for exploration policy')
   parser.add_argument('--var_context', default=0.5, type=float, help='variance of context states')
+  parser.add_argument('--exploration_percent', default=0.8, type=float, help='percentage of exploration steps')
 
   parser = add_config_args(parser, config)
   args = parser.parse_args()

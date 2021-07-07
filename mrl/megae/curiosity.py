@@ -248,6 +248,7 @@ class MegaeCuriosity(mrl.Module):
                     self.go_explore[i] = 0.
                     self.is_success[i] = 0.
                     self.is_explore[i] = 0.
+                    self.num_steps[i] = 0.
 
     def _generate_context_states(self, num_context, context_var):
         goal_dim = self.env.goal_dim
@@ -354,5 +355,5 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       flattened_context_states = context_states.reshape(num_envs * self.num_context, -1)
       density_context_states = density_module.evaluate_log_density(flattened_context_states)\
           .reshape(num_envs, self.num_context)
-      density_context_states_normalized = density_context_states / np.sum(density_context_states)
+      density_context_states_normalized = density_context_states / np.sum(density_context_states, axis=-1, keepdims=True)
       return density_context_states_normalized

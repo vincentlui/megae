@@ -74,7 +74,7 @@ def megae_config():
     config.eexplore = 0.1
     config.go_eexplore = 0.1
     config.go_reset_percent = 0.
-    config.her = 'rfaab_1_4_3_1_1'
+    config.her = 'futureactual_2_2'
     config.grad_value_clipping = 5.
     return config
       # config = default_ddpg_config()
