@@ -331,11 +331,12 @@ class DensityMegaeCuriosity(MegaeCuriosity):
     return normalized_inverse_densities
 
   def score_states(self, states):
+      ag = states['achieved_goal']
       density_module = getattr(self, self.density_module)
       if not density_module.ready:
-          density_module._optimize(force=True)
-
-      states_score = -1 * density_module.evaluate_log_density(states)
+          # density_module._optimize(force=True)
+        return np.zeros(ag.shape[0])
+      states_score = -1 * density_module.evaluate_log_density(ag)
 
       return states_score
 

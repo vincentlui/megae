@@ -37,7 +37,8 @@ class MegaeBuffer(OnlineHERBuffer):
                  ("action", env.action_space.shape), ("reward", (1,)),
                  ("next_state", observation_space.shape), ("done", (1,)),
                  ("context", (self.ag_curiosity.num_context,)),
-                 ('next_context', (self.ag_curiosity.num_context,))]
+                 ('next_context', (self.ag_curiosity.num_context,)),
+                 ('reward_expl', (1,))]
 
         if self.goal_space is not None:
             items += [("previous_ag", self.goal_space.shape),  # for reward shaping
@@ -55,6 +56,7 @@ class MegaeBuffer(OnlineHERBuffer):
         action = exp.action
         context = exp.context
         next_context = exp.next_context
+        reward_expl = np.expand_dims(exp.reward_expl, 1)
 
         if self.goal_space:
             state = exp.state['observation']
@@ -70,7 +72,7 @@ class MegaeBuffer(OnlineHERBuffer):
                 behavioral = desired
             for i in range(self.n_envs):
                 self._subbuffers[i].append([
-                    state[i], action[i], reward[i], next_state[i], done[i], context[i], next_context[i],
+                    state[i], action[i], reward[i], next_state[i], done[i], context[i], next_context[i], reward_expl[i],
                     previous_achieved[i], achieved[i], behavioral[i], desired[i]
                 ])
         else:
@@ -78,7 +80,7 @@ class MegaeBuffer(OnlineHERBuffer):
             next_state = exp.next_state
             for i in range(self.n_envs):
                 self._subbuffers[i].append(
-                    [state[i], action[i], reward[i], next_state[i], done[i], context[i], next_context[i]])
+                    [state[i], action[i], reward[i], next_state[i], done[i], context[i], next_context[i], reward_expl[i]])
 
         for i in range(self.n_envs):
             if exp.trajectory_over[i]:
@@ -113,23 +115,23 @@ class MegaeBuffer(OnlineHERBuffer):
                                                                                         beh_batch_size]))
 
                 # Sample the real batch (i.e., goals = behavioral goals)
-                states, actions, rewards, next_states, dones, contexts, next_contexts, previous_ags, ags, goals, _ = \
+                states, actions, rewards, next_states, dones, contexts, next_contexts, reward_expls, previous_ags, ags, goals, _ = \
                     self.buffer.sample(real_batch_size, batch_idxs=real_idxs)
 
                 # Sample the future batch
-                states_fut, actions_fut, _, next_states_fut, dones_fut, contexts_fut, next_contexts_fut, previous_ags_fut, ags_fut, _, _, goals_fut = \
+                states_fut, actions_fut, _, next_states_fut, dones_fut, contexts_fut, next_contexts_fut, reward_expls_fut, previous_ags_fut, ags_fut, _, _, goals_fut = \
                     self.buffer.sample_future(fut_batch_size, batch_idxs=fut_idxs)
 
                 # Sample the actual batch
-                states_act, actions_act, _, next_states_act, dones_act, contexts_act, next_contexts_act, previous_ags_act, ags_act, _, _, goals_act = \
+                states_act, actions_act, _, next_states_act, dones_act, contexts_act, next_contexts_act, reward_expls_act, previous_ags_act, ags_act, _, _, goals_act = \
                     self.buffer.sample_from_goal_buffer('dg', act_batch_size, batch_idxs=act_idxs)
 
                 # Sample the achieved batch
-                states_ach, actions_ach, _, next_states_ach, dones_ach, contexts_ach, next_contexts_ach, previous_ags_ach, ags_ach, _, _, goals_ach = \
+                states_ach, actions_ach, _, next_states_ach, dones_ach, contexts_ach, next_contexts_ach, reward_expls_ach, previous_ags_ach, ags_ach, _, _, goals_ach = \
                     self.buffer.sample_from_goal_buffer('ag', ach_batch_size, batch_idxs=ach_idxs)
 
                 # Sample the behavioral batch
-                states_beh, actions_beh, _, next_states_beh, dones_beh, contexts_beh, next_contexts_beh, previous_ags_beh, ags_beh, _, _, goals_beh = \
+                states_beh, actions_beh, _, next_states_beh, dones_beh, contexts_beh, next_contexts_beh, reward_expls_beh, previous_ags_beh, ags_beh, _, _, goals_beh = \
                     self.buffer.sample_from_goal_buffer('bg', beh_batch_size, batch_idxs=beh_idxs)
 
                 # Concatenate the five
@@ -143,6 +145,8 @@ class MegaeBuffer(OnlineHERBuffer):
                     [contexts, contexts_fut, contexts_act, contexts_ach, contexts_beh], 0)
                 next_contexts = np.concatenate(
                     [next_contexts, next_contexts_fut, next_contexts_act, next_contexts_ach, next_contexts_beh], 0)
+                reward_expls = np.concatenate(
+                    [reward_expls, reward_expls_fut, reward_expls_act, reward_expls_ach, reward_expls_beh], 0)
 
                 # Recompute reward online
                 if hasattr(self, 'goal_reward'):
@@ -184,7 +188,7 @@ class MegaeBuffer(OnlineHERBuffer):
             #     next_states = np.concatenate((next_states, goals), -1)
 
             if append_context:
-                rewards = self.ag_curiosity.score_states(next_states).reshape(-1, 1)
+                rewards = reward_expls
                 states = np.concatenate((states, contexts), -1)
                 next_states = np.concatenate((next_states, next_contexts), -1)
                 if hasattr(self, 'state_normalizer_expl'):

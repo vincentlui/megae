@@ -48,7 +48,8 @@ class MegaeTrain(mrl.Module):
                 self.reset_idxs = []
 
             next_context = self.get_context(next_state)
-            state, experience = debug_vectorized_experience(state, action, next_state, reward, done, info, context, next_context)
+            reward_expl = self.ag_curiosity.score_states(next_state)
+            state, experience = debug_vectorized_experience(state, action, next_state, reward, done, info, context, next_context, reward_expl)
             self.process_experience(experience)
 
             if render:
@@ -76,7 +77,7 @@ class MegaeTrain(mrl.Module):
         self._load_props(['env_steps'], save_folder)
 
 
-def debug_vectorized_experience(state, action, next_state, reward, done, info, context, next_context):
+def debug_vectorized_experience(state, action, next_state, reward, done, info, context, next_context, reward_expl):
     """Gym returns an ambiguous "done" signal. VecEnv doesn't
     let you fix it until now. See ReturnAndObsWrapper in env.py for where
     these info attributes are coming from."""
@@ -87,6 +88,7 @@ def debug_vectorized_experience(state, action, next_state, reward, done, info, c
         info=info,
         context=context,
         next_context=next_context,
+        reward_expl=reward_expl
     )
     next_copy = deepcopy(next_state)  # deepcopy handles dict states
 
