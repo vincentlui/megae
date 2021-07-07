@@ -215,11 +215,11 @@ class Navigation2d(gym.GoalEnv):
   """
   def __init__(self, test=False):
     super().__init__()
-    self._env = Env(n=50, maze_type='corridor_10', use_antigoal=False, ddiff=False, ignore_reset_start=True)
+    self._env = Env(n=50, maze_type='corridor_5', use_antigoal=False, ddiff=False, ignore_reset_start=True)
     self.maze = self._env.maze
     self.dist_threshold = 0.15
 
-    self.action_space = gym.spaces.Box(-0.5, 0.5, (2, ))
+    self.action_space = gym.spaces.Box(-0.15, 0.15, (2, ))
     observation_space = gym.spaces.Box(-np.inf, np.inf, (2, ))
     goal_space = gym.spaces.Box(-np.inf, np.inf, (2, ))
     self.observation_space = gym.spaces.Dict({
