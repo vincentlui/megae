@@ -212,8 +212,8 @@ def main(args):
     render=False
     for epoch in range(int(args.max_steps // args.epoch_len)):
       t = time.time()
-      if epoch > 15:
-        render=True
+      # if epoch > 15:
+      #   render=True
       agent.train(num_steps=args.epoch_len, render=render)
 
       # VIZUALIZE GOALS
