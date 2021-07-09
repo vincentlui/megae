@@ -8,7 +8,7 @@ from mrl.replays.online_her_buffer import OnlineHERBuffer
 from mrl.utils.misc import softmax, AttrDict
 from sklearn.neighbors import KernelDensity
 from collections import deque
-from numpy.random import multivariate_normal
+from numpy.random import multivariate_normal, uniform
 
 
 def generate_overshooting_goals(num_proposals, step_amount, direct_overshoots, base_goal):
@@ -255,7 +255,8 @@ class MegaeCuriosity(mrl.Module):
         goal_dim = self.env.goal_dim
         mean = np.zeros(goal_dim)
         cov = np.identity(goal_dim) * context_var
-        return multivariate_normal(mean, cov, num_context)
+        # return multivariate_normal(mean, cov, num_context)
+        return uniform(-context_var, context_var, (num_context, goal_dim))
 
     def compute_q(self, numpy_states):
         states = self.torch(numpy_states)

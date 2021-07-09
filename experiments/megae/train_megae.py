@@ -238,7 +238,7 @@ def main(args):
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description="Train DDPG", formatter_class=lambda prog: argparse.RawTextHelpFormatter(prog, max_help_position=100, width=120))
-  parser.add_argument('--parent_folder', default='./log/mega', type=str, help='where to save progress')
+  parser.add_argument('--parent_folder', default='/data/bing/lui/log/megae', type=str, help='where to save progress')
   parser.add_argument('--prefix', type=str, default='proto', help='Prefix for agent name (subfolder where it is saved)')
   parser.add_argument('--env', default="FetchPush-v1", type=str, help="gym environment")
   parser.add_argument('--max_steps', default=5000000, type=int, help="maximum number of training steps")
