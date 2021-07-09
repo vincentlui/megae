@@ -13,7 +13,7 @@ from mrl.megae.policy import ExplorationActorPolicy
 from mrl.megae.train import MegaeTrain
 from mrl.megae.algo import DDPG2
 from mrl.megae.config import megae_config
-from mrl.megae.replay_buffer import MegaeBuffer
+from mrl.megae.replay_buffer import MegaeBuffer, Megae2Buffer
 from mrl.megae.normalizer import Normalizer, MeanStdNormalizer
 
 
@@ -48,7 +48,8 @@ def main(args):
           policy_expl=ExplorationActorPolicy(),
           logger=Logger(),
           state_normalizer=Normalizer(MeanStdNormalizer()),
-          replay=MegaeBuffer(),
+          replay=MegaeBuffer(module_name='replay_buffer'),
+          # replay2=Megae2Buffer(module_name='replay_buffer_expl')
       ))
 
   # state_normalizer2 = Normalizer(MeanStdNormalizer()) # Normalize context states

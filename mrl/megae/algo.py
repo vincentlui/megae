@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import os
 
 class OffPolicyActorCritic2(OffPolicyActorCritic):
-    def __init__(self, algorithm_name, actor_name='actor', critic_name='critic', is_explore=False):
+    def __init__(self, algorithm_name, actor_name='actor', critic_name='critic', replay_buffer_name='replay_buffer', is_explore=False):
         mrl.Module.__init__(
         self,
         algorithm_name,
@@ -17,6 +17,7 @@ class OffPolicyActorCritic2(OffPolicyActorCritic):
         locals=locals())
         self.actor_name = actor_name
         self.critic_name = critic_name
+        self.replay_buffer_name = replay_buffer_name
         self.is_explore = is_explore
 
     def _setup(self):
@@ -74,6 +75,7 @@ class OffPolicyActorCritic2(OffPolicyActorCritic):
         self.critic_algo = getattr(self, self.critic_name)
         self.actor_algo_target = getattr(self, self.actor_name + '_target')
         self.critic_algo_target = getattr(self, self.critic_name + '_target')
+        self.replay_buffer = getattr(self, self.replay_buffer_name)
 
         self.action_scale = self.env.max_action
 

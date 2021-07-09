@@ -28,10 +28,7 @@ class MegaeTrain(mrl.Module):
         context = self.get_context(state)
 
         for _ in range(num_steps // env.num_envs):
-            if self.ag_curiosity.is_explore.any():
-                action = self.policy(state, context=context)
-            else:
-                action = self.policy(state)
+            action = self.policy(state, context=context, is_explore=self.ag_curiosity.is_explore)
             next_state, reward, done, info = env.step(action)
 
             if self.reset_idxs:

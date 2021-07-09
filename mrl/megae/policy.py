@@ -22,7 +22,7 @@ class ExplorationActorPolicy(mrl.Module):
     def _setup(self):
         self.use_actor_target = self.config.get('use_actor_target')
 
-    def __call__(self, state, context=None, greedy=False):
+    def __call__(self, state, greedy=False, context=None, is_explore=None):
         action_scale = self.env.max_action
 
         # initial exploration and intrinsic curiosity
@@ -36,52 +36,70 @@ class ExplorationActorPolicy(mrl.Module):
         if res is not None:
             return res
 
-        if context is None:
-            # Goal conditioned exploration
-            state = flatten_state(state)  # flatten goal environments
-            if hasattr(self, 'state_normalizer'):
-                state = self.state_normalizer(state, update=self.training)
+        s_flatten = flatten_state(state)
+        action = None
+        if is_explore is not None and is_explore.any():
+            num_env = s_flatten.shape[0]
+            action_dim = self.env.action_dim
+            action = np.empty((num_env, action_dim))
 
-            state = self.torch(state)
-
-            if self.use_actor_target:
-                action = self.numpy(self.actor_target(state))
-            else:
-                action = self.numpy(self.actor(state))
-
-            if self.training and not greedy:
-                action = self.action_noise(action)
-                if self.config.get('eexplore'):
-                    eexplore = self.config.eexplore
-                    if hasattr(self, 'ag_curiosity'):
-                        eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
-                    mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
-                    randoms = np.random.random(action.shape) * (2 * action_scale) - action_scale
-                    action = mask * randoms + (1 - mask) * action
-
+            is_explore_index = np.nonzero(is_explore)[0]
+            goal_index = np.nonzero(is_explore==0)[0]
+            if len(is_explore_index) > 0:
+                if isinstance(state, dict):
+                    obs = state['observation']
+                    s = np.concatenate((obs[is_explore_index], context[is_explore_index]), -1)
+                else:
+                    s = np.concatenate((state[is_explore_index], context[is_explore_index]), -1)
+                a_expl = self.directed_exploration(s, greedy)
+                action[is_explore_index] = a_expl
+            if len(goal_index) > 0:
+                a_goal = self.goal_conditioned_policy(s_flatten[goal_index], greedy)
+                action[goal_index] = a_goal
         else:
-            # Directed exploration
-            if isinstance(state, dict):
-                obs = state['observation']
-                state = np.concatenate((obs, context), -1)
-            else:
-                state = np.concatenate((state, context), -1)
-
-            if hasattr(self, 'state_normalizer_expl'):
-                state = self.state_normalizer_expl(state, update=self.training)
-
-            state = self.torch(state)
-
-            if self.use_actor_target:
-                action = self.numpy(self.expl_actor_target(state))
-            else:
-                action = self.numpy(self.expl_actor(state))
-
-            if self.training and not greedy:
-                action = self.action_noise(action)
-
+            action = self.goal_conditioned_policy(s_flatten, greedy)
 
         return np.clip(action, -action_scale, action_scale)
+
+    def goal_conditioned_policy(self, state, greedy):
+        if hasattr(self, 'state_normalizer'):
+            state = self.state_normalizer(state, update=self.training)
+
+        state = self.torch(state)
+
+        if self.use_actor_target:
+            action = self.numpy(self.actor_target(state))
+        else:
+            action = self.numpy(self.actor(state))
+
+        if self.training and not greedy:
+            action = self.action_noise(action)
+            # if self.config.get('eexplore'):
+            #     eexplore = self.config.eexplore
+            #     if hasattr(self, 'ag_curiosity'):
+            #         eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
+            #     mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
+            #     randoms = np.random.random(action.shape) * (2 * action_scale) - action_scale
+            #     action = mask * randoms + (1 - mask) * action
+
+        return action
+
+    def directed_exploration(self, state, greedy):
+        # Directed exploration
+        if hasattr(self, 'state_normalizer_expl'):
+            state = self.state_normalizer_expl(state, update=self.training)
+
+        state = self.torch(state)
+
+        if self.use_actor_target:
+            action = self.numpy(self.expl_actor_target(state))
+        else:
+            action = self.numpy(self.expl_actor(state))
+
+        if self.training and not greedy:
+            action = self.action_noise(action)
+
+        return action
 
 
 # class StochasticActorPolicy(mrl.Module):

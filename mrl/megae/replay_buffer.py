@@ -1,4 +1,6 @@
+import mrl
 from mrl.replays.online_her_buffer import OnlineHERBuffer
+from mrl.replays.old_replay_buffer import OldReplayBuffer
 from mrl.replays.core.shared_buffer import SharedMemoryTrajectoryBuffer as Buffer
 import gym
 import numpy as np
@@ -248,6 +250,151 @@ class MegaeBuffer(OnlineHERBuffer):
     #         self.logger.log_color('WARNING', 'Replay buffer is not being loaded / was not saved.', color='cyan')
     #         self.logger.log_color('WARNING', 'Replay buffer is not being loaded / was not saved.', color='red')
     #         self.logger.log_color('WARNING', 'Replay buffer is not being loaded / was not saved.', color='yellow')
+
+
+class Megae2Buffer(OnlineHERBuffer):
+
+    def __init__(
+            self,
+            module_name='replay_buffer_expl'
+    ):
+        """
+        Buffer that does online hindsight relabeling.
+        Replaces the old combo of ReplayBuffer + HERBuffer.
+        """
+
+        super().__init__(module_name, required_agent_modules=['env'], locals=locals())
+
+        self.size = None
+        self.goal_space = None
+        self.hindsight_buffer = None
+        self.buffer = None
+        self.save_buffer = None
+
+    def _setup(self):
+        super()._setup()
+        self.size = self.config.replay_size
+
+        env = self.env
+        if type(env.observation_space) == gym.spaces.Dict:
+            observation_space = env.observation_space.spaces["observation"]
+            self.goal_space = env.observation_space.spaces["desired_goal"]
+        else:
+            observation_space = env.observation_space
+
+        items = [("state", observation_space.shape),
+                 ("action", env.action_space.shape), ("reward", (1,)),
+                 ("next_state", observation_space.shape), ("done", (1,)),
+                 ("context", (self.ag_curiosity.num_context,)),
+                 ('next_context', (self.ag_curiosity.num_context,)),
+                ]
+
+        if self.goal_space is not None:
+            items += [("previous_ag", self.goal_space.shape),  # for reward shaping
+                      ("ag", self.goal_space.shape),  # achieved goal
+                      ("bg", self.goal_space.shape),  # behavioral goal (i.e., intrinsic if curious agent)
+                      ("dg", self.goal_space.shape)]  # desired goal (even if ignored behaviorally)
+
+        self.buffer = Buffer(self.size, items)
+
+    def _process_experience(self, exp):
+        if exp.context is None:
+            return
+
+        if getattr(self, 'logger'):
+            self.logger.add_tabular('Replay buffer size', len(self.buffer))
+        done = np.expand_dims(exp.done, 1)  # format for replay buffer
+        # reward = np.expand_dims(exp.reward, 1)  # format for replay buffer
+        action = exp.action
+        context = exp.context
+        next_context = exp.next_context
+        reward = np.expand_dims(exp.reward_expl, 1)
+
+        if self.goal_space:
+            state = exp.state['observation']
+            next_state = exp.next_state['observation']
+            previous_achieved = exp.state['achieved_goal']
+            achieved = exp.next_state['achieved_goal']
+            desired = exp.state['desired_goal']
+            if hasattr(self, 'ag_curiosity') and self.ag_curiosity.current_goals is not None:
+                behavioral = self.ag_curiosity.current_goals
+                # recompute online reward
+                reward = self.env.compute_reward(achieved, behavioral, {'s': state, 'ns': next_state}).reshape(-1, 1)
+            else:
+                behavioral = desired
+            for i in range(self.n_envs):
+                self._subbuffers[i].append([
+                    state[i], action[i], reward[i], next_state[i], done[i], context[i], next_context[i], reward_expl[i],
+                    previous_achieved[i], achieved[i], behavioral[i], desired[i]
+                ])
+        else:
+            state = exp.state
+            next_state = exp.next_state
+            for i in range(self.n_envs):
+                self._subbuffers[i].append(
+                    [state[i], action[i], reward[i], next_state[i], done[i], context[i], next_context[i]])
+
+        for i in range(self.n_envs):
+            if exp.trajectory_over[i]:
+                trajectory = [np.stack(a) for a in zip(*self._subbuffers[i])]
+                self.buffer.add_trajectory(*trajectory)
+                self._subbuffers[i] = []
+
+    def sample(self, batch_size, to_torch=True):
+        if hasattr(self, 'prioritized_replay'):
+            batch_idxs = self.prioritized_replay(batch_size)
+        else:
+            batch_idxs = np.random.randint(self.buffer.size, size=batch_size)
+
+        if self.goal_space:
+            # Uses the original desired goals
+            states, actions, rewards, next_states, dones, contexts, next_contexts, _, _, _, goals = \
+                self.buffer.sample(batch_size, batch_idxs=batch_idxs)
+
+            # if self.config.slot_based_state:
+            #     # TODO: For now, we flatten according to config.slot_state_dims
+            #     I, J = self.config.slot_state_dims
+            #     states = np.concatenate((states[:, I, J], goals), -1)
+            #     next_states = np.concatenate((next_states[:, I, J], goals), -1)
+            # else:
+            #     states = np.concatenate((states, goals), -1)
+            #     next_states = np.concatenate((next_states, goals), -1)
+
+            states = np.concatenate((states, contexts), -1)
+            next_states = np.concatenate((next_states, next_contexts), -1)
+            if hasattr(self, 'state_normalizer_expl'):
+                states = self.state_normalizer_expl(states, update=False).astype(np.float32)
+                next_states = self.state_normalizer_expl(
+                    next_states, update=False).astype(np.float32)
+
+            gammas = self.config.gamma * (1. - dones)
+
+        # elif self.config.get('n_step_returns') and self.config.n_step_returns > 1:
+        #     states, actions, rewards, next_states, dones, contexts = self.buffer.sample_n_step_transitions(
+        #         batch_size, self.config.n_step_returns, self.config.gamma, batch_idxs=batch_idxs
+        #     )
+        #     gammas = self.config.gamma ** self.config.n_step_returns * (1. - dones)
+
+        else:
+            # states, actions, rewards, next_states, dones, contexts = self.buffer.sample(
+            #     batch_size, batch_idxs=batch_idxs)
+            # gammas = self.config.gamma * (1. - dones)
+            raise NotImplementedError
+
+        # if hasattr(self, 'state_normalizer'):
+        #     states = self.state_normalizer(states, update=False).astype(np.float32)
+        #     next_states = self.state_normalizer(
+        #         next_states, update=False).astype(np.float32)
+
+        if to_torch:
+            return (self.torch(states), self.torch(actions),
+                    self.torch(rewards), self.torch(next_states),
+                    self.torch(gammas))
+        else:
+            return (states, actions, rewards, next_states, gammas)
+
+    def __len__(self):
+        return len(self.buffer)
 
 
 def parse_hindsight_mode(hindsight_mode: str):

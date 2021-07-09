@@ -93,7 +93,8 @@ class MegaeCuriosity(mrl.Module):
                         generate_overshooting_goals(self.num_sampled_ags, step_amount, self.config.direct_overshoots,
                                                     self.current_goals[i]))
 
-            if not over and self.num_steps[i] >= self.explortation_start_steps:
+                    # and (self.num_steps[i] >= self.explortation_start_steps
+            if not over and self.is_explore[i] < 0.5 and ( np.random.random() < self.is_success[i] * 0.1): #self.num_steps[i] >= self.explortation_start_steps or
                 self.is_explore[i] = 1.
 
         return reset_idxs, overshooting_idxs, np.array(overshooting_proposals)
@@ -278,6 +279,10 @@ class MegaeCuriosity(mrl.Module):
         """ Lower is better """
         raise NotImplementedError  # SUBCLASS THIS!
 
+    def score_states(self, states):
+        """ Lower is better """
+        raise NotImplementedError  # SUBCLASS THIS!
+
     def save(self, save_folder):
         self._save_props(['cutoff', 'min_cutoff'], save_folder)  # can restart keeping track of successes / go explore
 
@@ -355,5 +360,5 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       flattened_context_states = context_states.reshape(num_envs * self.num_context, -1)
       density_context_states = density_module.evaluate_log_density(flattened_context_states)\
           .reshape(num_envs, self.num_context)
-      density_context_states_normalized = density_context_states / np.sum(density_context_states, axis=-1, keepdims=True)
+      density_context_states_normalized = density_context_states / np.linalg.norm(density_context_states, axis=-1, keepdims=True)
       return density_context_states_normalized
