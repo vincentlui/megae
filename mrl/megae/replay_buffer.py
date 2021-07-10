@@ -114,16 +114,17 @@ class MegaeBuffer(OnlineHERBuffer):
                     next_states = self.state_normalizer_expl(
                         next_states, update=False).astype(np.float32)
             else:
-                is_explore = self.buffer.sample(batch_size, batch_idxs)[7]
+                is_explore = self.buffer.sample(batch_size, batch_idxs)[8]
                 explore_idx, _ = is_explore.nonzero()
                 if explore_idx.size:
                     batch_idxs, _ = np.nonzero(is_explore==0)
+                    goal_batch_size = len(batch_idxs)
 
                 if has_config_her:
 
                     if self.config.env_steps > self.config.future_warm_up:
                         fut_batch_size, act_batch_size, ach_batch_size, beh_batch_size, real_batch_size = np.random.multinomial(
-                            batch_size, [self.fut, self.act, self.ach, self.beh, 1.])
+                            goal_batch_size, [self.fut, self.act, self.ach, self.beh, 1.])
                     else:
                         fut_batch_size, act_batch_size, ach_batch_size, beh_batch_size, real_batch_size = batch_size, 0, 0, 0, 0
 
