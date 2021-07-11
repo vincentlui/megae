@@ -11,7 +11,7 @@ import torch.nn as nn
 from mrl.megae.curiosity import DensityMegaeCuriosity
 from mrl.megae.policy import ExplorationActorPolicy
 from mrl.megae.train import MegaeTrain
-from mrl.megae.algo import DDPG2
+from mrl.megae.algo import DDPG2, SAC2
 from mrl.megae.config import megae_config
 from mrl.megae.replay_buffer import MegaeBuffer, Megae2Buffer
 from mrl.megae.normalizer import Normalizer, MeanStdNormalizer
@@ -114,17 +114,15 @@ def main(args):
 
   if args.alg.lower() == 'ddpg': 
     config.algorithm1 = DDPG2('algorithm1', 'actor', 'critic')
+  elif args.alg.lower() == 'sac':
+    config.algorithm1 = SAC2('algorithm1', 'actor', 'critic')
+  else:
+    raise NotImplementedError
+
+  if args.alg_expl.lower() == 'ddpg':
     config.algorithm2 = DDPG2('algorithm2', 'expl_actor', 'expl_critic', is_explore=True)
-  elif args.alg.lower() == 'td3':
-    config.algorithm = TD3()
-    config.target_network_update_freq *= 2
-  elif args.alg.lower() == 'dqn': 
-    config.algorithm = DQN()
-    config.policy = QValuePolicy()
-    config.qvalue_lr = config.critic_lr
-    config.qvalue_weight_decay = config.actor_weight_decay
-    config.double_q = True
-    config.random_action_prob = LinearSchedule(1.0, config.eexplore, 1e5)
+  elif args.alg_expl.lower() == 'sac':
+    config.algorithm2 = SAC2('algorithm2', 'expl_actor', 'expl_critic', is_explore=True)
   else:
     raise NotImplementedError
 
@@ -141,24 +139,50 @@ def main(args):
   config.eval_env = EnvModule(eval_env, num_envs=args.num_eval_envs, name='eval_env', seed=args.seed + 1138)
 
   e = config.eval_env
-  if args.alg.lower() == 'dqn':
-    config.qvalue = PytorchModel('qvalue', lambda: Critic(FCBody(e.state_dim + e.goal_dim, args.layers, nn.LayerNorm, make_activ(config.activ)), e.action_dim))
-  else:
+  config.critic = PytorchModel('critic',
+                               lambda: Critic(
+                                 FCBody(e.state_dim + e.goal_dim + e.action_dim, args.layers, nn.LayerNorm,
+                                        make_activ(config.activ)), 1))
+  if args.alg.lower() == 'ddpg':
     config.actor = PytorchModel('actor',
-                                lambda: Actor(FCBody(e.state_dim + e.goal_dim, args.layers, nn.LayerNorm, make_activ(config.activ)), e.action_dim, e.max_action))
-    config.actor2 = PytorchModel('expl_actor',
                                 lambda: Actor(
-                                  FCBody(e.state_dim + args.num_context, args.layers, nn.LayerNorm, make_activ(config.activ)),
+                                  FCBody(e.state_dim + e.goal_dim, args.layers, nn.LayerNorm, make_activ(config.activ)),
                                   e.action_dim, e.max_action))
-    config.critic = PytorchModel('critic',
-                                lambda: Critic(FCBody(e.state_dim + e.goal_dim + e.action_dim, args.layers, nn.LayerNorm, make_activ(config.activ)), 1))
-    config.critic2 = PytorchModel('expl_critic',
-                                 lambda: Critic(
-                                   FCBody(e.state_dim + args.num_context + e.action_dim, args.layers, nn.LayerNorm,
-                                          make_activ(config.activ)), 1))
-    if args.alg.lower() == 'td3':
-      config.critic2 = PytorchModel('critic2',
-        lambda: Critic(FCBody(e.state_dim + e.goal_dim + e.action_dim, args.layers, nn.LayerNorm, make_activ(config.activ)), 1))
+  elif args.alg.lower() == 'sac':
+    config.actor = PytorchModel('actor',
+                                lambda: StochasticActor(
+                                  FCBody(e.state_dim + e.goal_dim, args.layers, nn.LayerNorm, make_activ(config.activ)),
+                                  e.action_dim, e.max_action))
+    config.critic2 = PytorchModel('critic2',
+                                  lambda: Critic(
+                                    FCBody(e.state_dim + e.goal_dim + e.action_dim, args.layers, nn.LayerNorm,
+                                           make_activ(config.activ)), 1))
+  else:
+    raise NotImplementedError
+
+  config.expl_critic = PytorchModel('expl_critic',
+                                    lambda: Critic(
+                                      FCBody(e.state_dim + args.num_context + e.action_dim, args.layers, nn.LayerNorm,
+                                             make_activ(config.activ)), 1))
+  if args.alg_expl.lower() == 'ddpg':
+    config.expl_actor = PytorchModel('expl_actor',
+                                     lambda: Actor(
+                                       FCBody(e.state_dim + args.num_context, args.layers, nn.LayerNorm,
+                                              make_activ(config.activ)),
+                                       e.action_dim, e.max_action))
+  elif args.alg_expl.lower() == 'sac':
+    config.expl_actor = PytorchModel('expl_actor',
+                                     lambda: StochasticActor(
+                                       FCBody(e.state_dim + args.num_context, args.layers, nn.LayerNorm,
+                                              make_activ(config.activ)),
+                                       e.action_dim, e.max_action))
+    config.expl_critic2 = PytorchModel('expl_critic2',
+                                         lambda: Critic(
+                                           FCBody(e.state_dim + args.num_context + e.action_dim, args.layers,
+                                                  nn.LayerNorm,
+                                                  make_activ(config.activ)), 1))
+  else:
+    raise NotImplementedError
 
   if args.ag_curiosity == 'goaldisc':
     config.goal_discriminator = PytorchModel('goal_discriminator', lambda: Critic(FCBody(e.state_dim + e.goal_dim, args.layers, nn.LayerNorm, make_activ(config.activ)), 1))
@@ -242,7 +266,8 @@ if __name__ == '__main__':
   parser.add_argument('--prefix', type=str, default='proto', help='Prefix for agent name (subfolder where it is saved)')
   parser.add_argument('--env', default="FetchPush-v1", type=str, help="gym environment")
   parser.add_argument('--max_steps', default=5000000, type=int, help="maximum number of training steps")
-  parser.add_argument('--alg', default='DDPG', type=str, help='algorithm to use (DDPG or TD3)')
+  parser.add_argument('--alg', default='DDPG', type=str, help='algorithm to use (DDPG or SAC)')
+  parser.add_argument('--alg_expl', default='SAC', type=str, help='algorithm to use (DDPG or SAC)')
   parser.add_argument(
       '--layers', nargs='+', default=(512,512,512), type=int, help='sizes of layers for actor/critic networks')
   parser.add_argument('--noise_type', default='Gaussian', type=str, help='type of action noise (Gaussian or OU)')

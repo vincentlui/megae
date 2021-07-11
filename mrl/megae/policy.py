@@ -1,6 +1,6 @@
 import mrl
 from mrl.utils.misc import soft_update, flatten_state
-from mrl.modules.model import PytorchModel
+from mrl.utils.networks import StochasticActor
 
 import numpy as np
 import torch
@@ -68,19 +68,17 @@ class ExplorationActorPolicy(mrl.Module):
         state = self.torch(state)
 
         if self.use_actor_target:
-            action = self.numpy(self.actor_target(state))
+            action = self.actor_target(state)
         else:
-            action = self.numpy(self.actor(state))
+            action = self.actor(state)
 
-        if self.training and not greedy:
+        if isinstance(self.actor.model, StochasticActor):
+            action = action[0]
+
+        action = self.numpy(action)
+
+        if not isinstance(self.actor.model, StochasticActor) and self.training and not greedy:
             action = self.action_noise(action)
-            # if self.config.get('eexplore'):
-            #     eexplore = self.config.eexplore
-            #     if hasattr(self, 'ag_curiosity'):
-            #         eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
-            #     mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
-            #     randoms = np.random.random(action.shape) * (2 * action_scale) - action_scale
-            #     action = mask * randoms + (1 - mask) * action
 
         return action
 
@@ -92,62 +90,67 @@ class ExplorationActorPolicy(mrl.Module):
         state = self.torch(state)
 
         if self.use_actor_target:
-            action = self.numpy(self.expl_actor_target(state))
+            action = self.expl_actor_target(state)
         else:
-            action = self.numpy(self.expl_actor(state))
+            action = self.expl_actor(state)
 
-        if self.training and not greedy:
+        if isinstance(self.expl_actor.model, StochasticActor):
+            action = action[0]
+
+        action = self.numpy(action)
+
+        if not isinstance(self.expl_actor.model, StochasticActor) and self.training and not greedy:
             action = self.action_noise(action)
 
         return action
 
 
-# class StochasticActorPolicy(mrl.Module):
-#     """Used for SAC / learned action noise"""
-#
-#     def __init__(self):
-#         super().__init__(
-#             'policy',
-#             required_agent_modules=[
-#                 'actor', 'env', 'replay_buffer'
-#             ],
-#             locals=locals())
-#
-#     def _setup(self):
-#         self.use_actor_target = self.config.get('use_actor_target')
-#
-#     def __call__(self, state, greedy=False):
-#         action_scale = self.env.max_action
-#
-#         # initial exploration and intrinsic curiosity
-#         res = None
-#         if self.training:
-#             if self.config.get('initial_explore') and len(self.replay_buffer) < self.config.initial_explore:
-#                 res = np.array([self.env.action_space.sample() for _ in range(self.env.num_envs)])
-#             elif hasattr(self, 'ag_curiosity'):
-#                 state = self.ag_curiosity.relabel_state(state)
-#
-#         state = flatten_state(state)  # flatten goal environments
-#         if hasattr(self, 'state_normalizer'):
-#             state = self.state_normalizer(state, update=self.training)
-#
-#         if res is not None:
-#             return res
-#
-#         state = self.torch(state)
-#
-#         if self.use_actor_target:
-#             action, _ = self.actor_target(state)
-#         else:
-#             action, _ = self.actor(state)
-#         action = self.numpy(action)
-#
-#         if self.training and not greedy and self.config.get('eexplore'):
-#             eexplore = self.config.eexplore
-#             if hasattr(self, 'ag_curiosity'):
-#                 eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
-#             mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
-#             randoms = np.random.random(action.shape) * (2 * action_scale) - action_scale
-#             action = mask * randoms + (1 - mask) * action
-#
-#         return np.clip(action, -action_scale, action_scale)
+class StochasticActorPolicy(mrl.Module):
+    """Used for SAC / learned action noise"""
+
+    def __init__(self):
+        super().__init__(
+            'policy',
+            required_agent_modules=[
+                'actor', 'env', 'replay_buffer'
+            ],
+            locals=locals())
+
+    def _setup(self):
+        self.use_actor_target = self.config.get('use_actor_target')
+
+    def __call__(self, state, greedy=False):
+        action_scale = self.env.max_action
+
+        # initial exploration and intrinsic curiosity
+        res = None
+        if self.training:
+            if self.config.get('initial_explore') and len(self.replay_buffer) < self.config.initial_explore:
+                res = np.array([self.env.action_space.sample() for _ in range(self.env.num_envs)])
+            elif hasattr(self, 'ag_curiosity'):
+                state = self.ag_curiosity.relabel_state(state)
+
+        state = flatten_state(state)  # flatten goal environments
+        if hasattr(self, 'state_normalizer'):
+            state = self.state_normalizer(state, update=self.training)
+
+        if res is not None:
+            return res
+
+        state = self.torch(state)
+
+        if self.use_actor_target:
+            action, _ = self.actor_target(state)
+        else:
+            action, _ = self.actor(state)
+        action = self.numpy(action)
+
+        if self.training and not greedy and self.config.get('eexplore'):
+            eexplore = self.config.eexplore
+            if hasattr(self, 'ag_curiosity'):
+                eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
+            mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
+            randoms = np.random.random(action.shape) * (2 * action_scale) - action_scale
+            action = mask * randoms + (1 - mask) * action
+
+        return np.clip(action, -action_scale, action_scale)

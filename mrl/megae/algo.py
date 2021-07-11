@@ -148,3 +148,64 @@ class DDPG2(OffPolicyActorCritic2):
 
         for p in self.critic_params:
             p.requires_grad = True
+
+
+class SAC2(OffPolicyActorCritic2):
+
+    def _setup(self):
+        super()._setup()
+        self.critic2_algo = getattr(self, self.critic_name+'2')
+        self.critic2_algo_target = getattr(self, self.critic_name + '2_target')
+
+    def optimize_from_batch(self, states, actions, rewards, next_states, gammas):
+        config = self.config
+
+        with torch.no_grad():
+            # Target actions come from *current* policy
+            a_next, logp_next = self.actor_algo(next_states)
+            q1 = self.critic_algo_target(next_states, a_next)
+            q2 = self.critic2_algo_target(next_states, a_next)
+            target = rewards + gammas * (torch.min(q1, q2) - config.entropy_coef * logp_next)
+            target = torch.clamp(target, *self.config.clip_target_range)
+
+        if hasattr(self, 'logger') and self.config.opt_steps % 1000 == 0:
+            self.logger.add_histogram('Optimize/Target_q', target)
+
+        q1, q2 = self.critic_algo(states, actions), self.critic2_algo(states, actions)
+        critic_loss = F.mse_loss(q1, target) + F.mse_loss(q2, target)
+
+        self.critic_opt.zero_grad()
+        critic_loss.backward()
+
+        # Grad clipping
+        if self.config.grad_norm_clipping > 0.:
+            torch.nn.utils.clip_grad_norm_(self.critic_params, self.config.grad_norm_clipping)
+        if self.config.grad_value_clipping > 0.:
+            torch.nn.utils.clip_grad_value_(self.critic_params, self.config.grad_value_clipping)
+
+        self.critic_opt.step()
+
+        for p in self.critic_params:
+            p.requires_grad = False
+
+        a, logp = self.actor_algo(states)
+        q = torch.min(self.critic_algo(states, a), self.critic2_algo(states, a))
+
+        actor_loss = (config.entropy_coef * logp - q).mean()
+
+        if self.config.action_l2_regularization:
+            actor_loss += self.config.action_l2_regularization * F.mse_loss(a / self.action_scale, torch.zeros_like(a))
+
+        self.actor_opt.zero_grad()
+        actor_loss.backward()
+
+        # Grad clipping
+        if self.config.grad_norm_clipping > 0.:
+            torch.nn.utils.clip_grad_norm_(self.actor_params, self.config.grad_norm_clipping)
+        if self.config.grad_value_clipping > 0.:
+            torch.nn.utils.clip_grad_value_(self.actor_params, self.config.grad_value_clipping)
+
+        self.actor_opt.step()
+
+        for p in self.critic_params:
+            p.requires_grad = True
