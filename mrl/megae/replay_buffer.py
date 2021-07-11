@@ -116,6 +116,7 @@ class MegaeBuffer(OnlineHERBuffer):
             else:
                 is_explore = self.buffer.sample(batch_size, batch_idxs)[8]
                 explore_idx, _ = is_explore.nonzero()
+                goal_batch_size = batch_size
                 if explore_idx.size:
                     batch_idxs, _ = np.nonzero(is_explore==0)
                     goal_batch_size = len(batch_idxs)
