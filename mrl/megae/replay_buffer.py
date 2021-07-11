@@ -59,7 +59,7 @@ class MegaeBuffer(OnlineHERBuffer):
         context = exp.context
         next_context = exp.next_context
         reward_expl = np.expand_dims(exp.reward_expl, 1)
-        is_explore = exp.is_explore
+        is_explore = self.ag_curiosity.is_explore
 
         if self.goal_space:
             state = exp.state['observation']
@@ -73,6 +73,9 @@ class MegaeBuffer(OnlineHERBuffer):
                 reward = self.env.compute_reward(achieved, behavioral, {'s': state, 'ns': next_state}).reshape(-1, 1)
             else:
                 behavioral = desired
+            is_explore_idx = is_explore.nonzero()[0]
+            if is_explore_idx.size:
+                desired[is_explore_idx] = exp.next_state['achieved_goal'][is_explore_idx]
             for i in range(self.n_envs):
                 self._subbuffers[i].append([
                     state[i], action[i], reward[i], next_state[i], done[i], context[i], next_context[i], reward_expl[i], is_explore[i],
@@ -114,12 +117,12 @@ class MegaeBuffer(OnlineHERBuffer):
                     next_states = self.state_normalizer_expl(
                         next_states, update=False).astype(np.float32)
             else:
-                is_explore = self.buffer.sample(batch_size, batch_idxs)[8]
-                explore_idx, _ = is_explore.nonzero()
+                # is_explore = self.buffer.sample(batch_size, batch_idxs)[8]
+                # explore_idx, _ = is_explore.nonzero()
                 goal_batch_size = batch_size
-                if explore_idx.size:
-                    batch_idxs, _ = np.nonzero(is_explore==0)
-                    goal_batch_size = len(batch_idxs)
+                # if explore_idx.size:
+                #     batch_idxs, _ = np.nonzero(is_explore==0)
+                #     goal_batch_size = len(batch_idxs)
 
                 if has_config_her:
 
@@ -127,7 +130,7 @@ class MegaeBuffer(OnlineHERBuffer):
                         fut_batch_size, act_batch_size, ach_batch_size, beh_batch_size, real_batch_size = np.random.multinomial(
                             goal_batch_size, [self.fut, self.act, self.ach, self.beh, 1.])
                     else:
-                        fut_batch_size, act_batch_size, ach_batch_size, beh_batch_size, real_batch_size = batch_size, 0, 0, 0, 0
+                        fut_batch_size, act_batch_size, ach_batch_size, beh_batch_size, real_batch_size = goal_batch_size, 0, 0, 0, 0
 
                     fut_idxs, act_idxs, ach_idxs, beh_idxs, real_idxs = np.array_split(batch_idxs,
                                                                                        np.cumsum(
@@ -135,8 +138,8 @@ class MegaeBuffer(OnlineHERBuffer):
                                                                                             ach_batch_size,
                                                                                             beh_batch_size]))
 
-                    if explore_idx.size:
-                        fut_idxs = np.concatenate((fut_idxs, explore_idx))
+                    # if explore_idx.size:
+                    #     fut_idxs = np.concatenate((fut_idxs, explore_idx))
 
                     # Sample the real batch (i.e., goals = behavioral goals)
                     states, actions, rewards, next_states, dones, contexts, next_contexts, reward_expls, _, previous_ags, ags, goals, _ = \
@@ -165,12 +168,12 @@ class MegaeBuffer(OnlineHERBuffer):
                     goals = np.concatenate([goals, goals_fut, goals_act, goals_ach, goals_beh], 0)
                     next_states = np.concatenate(
                         [next_states, next_states_fut, next_states_act, next_states_ach, next_states_beh], 0)
-                    contexts = np.concatenate(
-                        [contexts, contexts_fut, contexts_act, contexts_ach, contexts_beh], 0)
-                    next_contexts = np.concatenate(
-                        [next_contexts, next_contexts_fut, next_contexts_act, next_contexts_ach, next_contexts_beh], 0)
-                    reward_expls = np.concatenate(
-                        [reward_expls, reward_expls_fut, reward_expls_act, reward_expls_ach, reward_expls_beh], 0)
+                    # contexts = np.concatenate(
+                    #     [contexts, contexts_fut, contexts_act, contexts_ach, contexts_beh], 0)
+                    # next_contexts = np.concatenate(
+                    #     [next_contexts, next_contexts_fut, next_contexts_act, next_contexts_ach, next_contexts_beh], 0)
+                    # reward_expls = np.concatenate(
+                    #     [reward_expls, reward_expls_fut, reward_expls_act, reward_expls_ach, reward_expls_beh], 0)
 
                     # Recompute reward online
                     if hasattr(self, 'goal_reward'):
