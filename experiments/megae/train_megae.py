@@ -87,6 +87,7 @@ def main(args):
                                                   exploration_percent=args.exploration_percent,
                                                   num_context=args.num_context,
                                                   context_var=args.var_context,
+                                                  context_dist=args.context_dist,
                                                   )
     elif args.ag_curiosity == 'megaeflow':
       config.ag_curiosity = DensityMegaeCuriosity('ag_flow', max_steps=args.env_max_step,
@@ -95,6 +96,7 @@ def main(args):
                                                   exploration_percent=args.exploration_percent,
                                                   num_context=args.num_context,
                                                   context_var=args.var_context,
+                                                  context_dist=args.context_dist,
                                                   )
     elif args.ag_curiosity == 'minrnd':
       config.ag_curiosity = DensityAchievedGoalCuriosity('ag_rnd', max_steps = args.env_max_step, num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff, keep_dg_percent=args.keep_dg_percent)
@@ -320,8 +322,9 @@ if __name__ == '__main__':
 
   # Megae args
   parser.add_argument('--num_context', default=20, type=int, help='number of context states density for exploration policy')
-  parser.add_argument('--var_context', default=0.5, type=float, help='variance of context states')
+  parser.add_argument('--var_context', default=1., type=float, help='variance of context states')
   parser.add_argument('--exploration_percent', default=0.8, type=float, help='percentage of exploration steps')
+  parser.add_argument('--context_dist', default='normal', type=str, help='percentage of exploration steps')
 
   parser = add_config_args(parser, config)
   args = parser.parse_args()

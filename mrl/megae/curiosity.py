@@ -28,7 +28,7 @@ class MegaeCuriosity(mrl.Module):
     """
 
     def __init__(self, num_sampled_ags=500, max_steps=50, keep_dg_percent=-1e-1, randomize=False, use_qcutoff=True,
-                 exploration_percent=0.8, num_context=10, context_var=0.1):
+                 exploration_percent=0.8, num_context=10, context_var=0.1, context_dist='normal'):
         super().__init__('ag_curiosity',
                          required_agent_modules=['env', 'replay_buffer', 'actor', 'critic'],
                          locals=locals())
@@ -40,6 +40,7 @@ class MegaeCuriosity(mrl.Module):
         self.explortation_start_steps = int(max_steps * exploration_percent)
         self.num_context = num_context
         self.context_var = context_var
+        self.context_dist = context_dist
 
     def _setup(self):
         assert isinstance(self.replay_buffer, OnlineHERBuffer)
@@ -253,10 +254,12 @@ class MegaeCuriosity(mrl.Module):
 
     def _generate_context_states(self, num_context, context_var):
         goal_dim = self.env.goal_dim
-        mean = np.zeros(goal_dim)
-        cov = np.identity(goal_dim) * context_var
-        # return multivariate_normal(mean, cov, num_context)
-        return uniform(-context_var, context_var, (num_context, goal_dim)).astype(np.float32)
+        if self.context_dist == 'normal':
+            mean = np.zeros(goal_dim)
+            cov = np.identity(goal_dim) * context_var
+            return multivariate_normal(mean, cov, num_context)
+
+        return uniform(-context_var, context_var, (num_context, goal_dim))
 
     def compute_q(self, numpy_states):
         states = self.torch(numpy_states)
