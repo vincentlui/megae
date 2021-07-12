@@ -80,8 +80,16 @@ def main(args):
       config.ag_curiosity = QAchievedGoalCuriosity(max_steps = args.env_max_step, randomize=True, num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff, keep_dg_percent=args.keep_dg_percent)
     elif args.ag_curiosity == 'minkde':
       config.ag_curiosity = DensityAchievedGoalCuriosity(max_steps = args.env_max_step, num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff, keep_dg_percent=args.keep_dg_percent)
-    elif args.ag_curiosity == 'megae':
+    elif args.ag_curiosity == 'megaekde':
       config.ag_curiosity = DensityMegaeCuriosity(max_steps=args.env_max_step,
+                                                   num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff,
+                                                   keep_dg_percent=args.keep_dg_percent,
+                                                  exploration_percent=args.exploration_percent,
+                                                  num_context=args.num_context,
+                                                  context_var=args.var_context,
+                                                  )
+    elif args.ag_curiosity == 'megaeflow':
+      config.ag_curiosity = DensityMegaeCuriosity('ag_flow', max_steps=args.env_max_step,
                                                    num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff,
                                                    keep_dg_percent=args.keep_dg_percent,
                                                   exploration_percent=args.exploration_percent,

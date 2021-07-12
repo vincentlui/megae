@@ -256,7 +256,7 @@ class MegaeCuriosity(mrl.Module):
         mean = np.zeros(goal_dim)
         cov = np.identity(goal_dim) * context_var
         # return multivariate_normal(mean, cov, num_context)
-        return uniform(-context_var, context_var, (num_context, goal_dim))
+        return uniform(-context_var, context_var, (num_context, goal_dim)).astype(np.float32)
 
     def compute_q(self, numpy_states):
         states = self.torch(numpy_states)
@@ -343,7 +343,7 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       if not density_module.ready:
           # density_module._optimize(force=True)
         return np.zeros(ag.shape[0])
-      states_score = -1 * density_module.evaluate_log_density(ag)
+      states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
 
       return states_score
 
