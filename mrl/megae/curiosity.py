@@ -343,7 +343,7 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       if not density_module.ready:
           # density_module._optimize(force=True)
         return np.zeros(ag.shape[0])
-      states_score = -1 * density_module.evaluate_log_density(ag)
+      states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
 
       return states_score
 
