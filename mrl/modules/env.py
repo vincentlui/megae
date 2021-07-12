@@ -109,6 +109,7 @@ def make_env(env_fn, seed, rank):
   def _init():
     env = env_fn()
     env.seed(seed + rank)
+    env.action_space.seed(seed + rank)
     env = ReturnAndObsWrapper(env)
     return env
 

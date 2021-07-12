@@ -24,6 +24,7 @@ def set_global_seeds(seed):
       tf.set_random_seed(seed)
   np.random.seed(seed)
   random.seed(seed)
+  torch.manual_seed(seed)
   # prng was removed in latest gym version
   if hasattr(gym.spaces, 'prng'):
     gym.spaces.prng.seed(seed)
