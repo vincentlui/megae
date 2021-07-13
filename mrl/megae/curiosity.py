@@ -28,7 +28,7 @@ class MegaeCuriosity(mrl.Module):
     """
 
     def __init__(self, num_sampled_ags=500, max_steps=50, keep_dg_percent=-1e-1, randomize=False, use_qcutoff=True,
-                 exploration_percent=0.8, num_context=10, context_var=0.1, context_dist='normal'):
+                 exploration_percent=0.8, num_context=10, context_var=0.1, context_dist='normal', initial_explore_percent=0.05):
         super().__init__('ag_curiosity',
                          required_agent_modules=['env', 'replay_buffer', 'actor', 'critic'],
                          locals=locals())
@@ -41,6 +41,7 @@ class MegaeCuriosity(mrl.Module):
         self.num_context = num_context
         self.context_var = context_var
         self.context_dist = context_dist
+        self.initial_explore_percent = initial_explore_percent
 
     def _setup(self):
         assert isinstance(self.replay_buffer, OnlineHERBuffer)
@@ -249,7 +250,7 @@ class MegaeCuriosity(mrl.Module):
                         self.replaced_goal[i] = 1.
                     self.go_explore[i] = 0.
                     self.is_success[i] = 0.
-                    self.is_explore[i] = 0.
+                    self.is_explore[i] = float(np.random.uniform() < self.initial_explore_percent)
                     self.num_steps[i] = 0.
 
     def _generate_context_states(self, num_context, context_var):

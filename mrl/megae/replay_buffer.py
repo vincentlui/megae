@@ -72,10 +72,14 @@ class MegaeBuffer(OnlineHERBuffer):
                 # recompute online reward
                 reward = self.env.compute_reward(achieved, behavioral, {'s': state, 'ns': next_state}).reshape(-1, 1)
             else:
-                behavioral = desired
+                behavioral = exp.next_state['achieved_goal']
             is_explore_idx = is_explore.nonzero()[0]
             if is_explore_idx.size:
                 desired[is_explore_idx] = exp.next_state['achieved_goal'][is_explore_idx]
+                behavioral[is_explore_idx] = exp.next_state['achieved_goal'][is_explore_idx]
+            if self.config.get('initial_explore') and len(self.replay_buffer) < self.config.initial_explore:
+                desired = exp.next_state['achieved_goal']
+                behavioral = exp.next_state['achieved_goal']
             for i in range(self.n_envs):
                 self._subbuffers[i].append([
                     state[i], action[i], reward[i], next_state[i], done[i], context[i], next_context[i], reward_expl[i], is_explore[i],
@@ -446,6 +450,13 @@ def parse_hindsight_mode(hindsight_mode: str):
         denom = (float(real) + float(fut) + float(act) + float(ach) + float(beh))
         fut = float(fut) / denom
         act = float(act) / denom
+        ach = float(ach) / denom
+        beh = float(beh) / denom
+    elif 'rfab_' in hindsight_mode:
+        _, real, fut, ach, beh = hindsight_mode.split('_')
+        denom = (float(real) + float(fut) + float(ach) + float(beh))
+        fut = float(fut) / denom
+        act = 0.
         ach = float(ach) / denom
         beh = float(beh) / denom
     else:

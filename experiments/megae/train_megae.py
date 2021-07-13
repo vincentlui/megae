@@ -52,9 +52,9 @@ def main(args):
           # replay2=Megae2Buffer(module_name='replay_buffer_expl')
       ))
 
-  # state_normalizer2 = Normalizer(MeanStdNormalizer()) # Normalize context states
-  # state_normalizer2.module_name = 'state_normalizer_expl'
-  # config.state_normalizer2 = state_normalizer2
+  state_normalizer2 = Normalizer(MeanStdNormalizer()) # Normalize context states
+  state_normalizer2.module_name = 'state_normalizer_expl'
+  config.state_normalizer2 = state_normalizer2
 
   config.prioritized_mode = args.prioritized_mode
   if config.prioritized_mode == 'mep':
@@ -88,6 +88,7 @@ def main(args):
                                                   num_context=args.num_context,
                                                   context_var=args.var_context,
                                                   context_dist=args.context_dist,
+                                                  initial_explore_percent=args.init_explore_percent
                                                   )
     elif args.ag_curiosity == 'megaeflow':
       config.ag_curiosity = DensityMegaeCuriosity('ag_flow', max_steps=args.env_max_step,
@@ -97,6 +98,7 @@ def main(args):
                                                   num_context=args.num_context,
                                                   context_var=args.var_context,
                                                   context_dist=args.context_dist,
+                                                  initial_explore_percent=args.init_explore_percent
                                                   )
     elif args.ag_curiosity == 'minrnd':
       config.ag_curiosity = DensityAchievedGoalCuriosity('ag_rnd', max_steps = args.env_max_step, num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff, keep_dg_percent=args.keep_dg_percent)
@@ -325,6 +327,7 @@ if __name__ == '__main__':
   parser.add_argument('--var_context', default=1., type=float, help='variance of context states')
   parser.add_argument('--exploration_percent', default=0.8, type=float, help='percentage of exploration steps')
   parser.add_argument('--context_dist', default='normal', type=str, help='percentage of exploration steps')
+  parser.add_argument('--init_explore_percent', default=0., type=float, help='percentage of pure exploration at start')
 
   parser = add_config_args(parser, config)
   args = parser.parse_args()
