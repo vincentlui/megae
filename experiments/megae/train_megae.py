@@ -56,6 +56,10 @@ def main(args):
   state_normalizer2.module_name = 'state_normalizer_expl'
   config.state_normalizer2 = state_normalizer2
 
+  reward_normalizer = Normalizer(MeanStdNormalizer())  # Normalize context states
+  reward_normalizer.module_name = 'reward_normalizer'
+  config.reward_normalizer = reward_normalizer
+
   config.prioritized_mode = args.prioritized_mode
   if config.prioritized_mode == 'mep':
     config.prioritized_replay = EntropyPrioritizedOnlineHERBuffer()
@@ -125,9 +129,9 @@ def main(args):
   config.action_noise = ContinuousActionNoise(noise_type, std=ConstantSchedule(args.action_noise))
 
   if args.alg.lower() == 'ddpg': 
-    config.algorithm1 = DDPG2('algorithm1', 'actor', 'critic')
+    config.algorithm1 = DDPG2('algorithm1', 'actor', 'critic', clip_target=True)
   elif args.alg.lower() == 'sac':
-    config.algorithm1 = SAC2('algorithm1', 'actor', 'critic')
+    config.algorithm1 = SAC2('algorithm1', 'actor', 'critic', clip_target=True)
   else:
     raise NotImplementedError
 
