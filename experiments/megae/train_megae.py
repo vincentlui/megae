@@ -37,7 +37,7 @@ def main(args):
   if args.sparse_reward_shaping:
     config.clip_target_range = (-np.inf, np.inf)
 
-  config.agent_name = make_agent_name(config, ['env','alg','her','layers','seed','tb','ag_curiosity','eexplore','first_visit_succ', 'dg_score_multiplier','alpha'], prefix=args.prefix)
+  config.agent_name = make_agent_name(config, ['env','her','layers','seed','tb','ag_curiosity','explore', 'var_context'], prefix=args.prefix)
 
   # 5. Setup / add basic modules to the config
   config.update(

@@ -21,10 +21,9 @@ class ExplorationActorPolicy(mrl.Module):
 
     def _setup(self):
         self.use_actor_target = self.config.get('use_actor_target')
+        self.action_scale = self.env.max_action
 
     def __call__(self, state, greedy=False, context=None, is_explore=None):
-        action_scale = self.env.max_action
-
         # initial exploration and intrinsic curiosity
         res = None
         if self.training:
@@ -59,7 +58,7 @@ class ExplorationActorPolicy(mrl.Module):
         else:
             action = self.goal_conditioned_policy(s_flatten, greedy)
 
-        return np.clip(action, -action_scale, action_scale)
+        return np.clip(action, -self.action_scale, self.action_scale)
 
     def goal_conditioned_policy(self, state, greedy):
         if hasattr(self, 'state_normalizer'):
@@ -77,8 +76,17 @@ class ExplorationActorPolicy(mrl.Module):
 
         action = self.numpy(action)
 
-        if not isinstance(self.actor.model, StochasticActor) and self.training and not greedy:
-            action = self.action_noise(action)
+        if isinstance(self.actor.model, StochasticActor) and self.training and not greedy:
+            if not isinstance(self.actor.model, StochasticActor):
+                action = self.action_noise(action)
+
+            if self.config.get('eexplore'):
+                eexplore = self.config.eexplore
+                if hasattr(self, 'ag_curiosity'):
+                    eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
+                mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
+                randoms = np.random.random(action.shape) * (2 * self.action_scale) - self.action_scale
+                action = mask * randoms + (1 - mask) * action
 
         return action
 
@@ -99,8 +107,17 @@ class ExplorationActorPolicy(mrl.Module):
 
         action = self.numpy(action)
 
-        if not isinstance(self.expl_actor.model, StochasticActor) and self.training and not greedy:
-            action = self.action_noise(action)
+        if isinstance(self.actor.model, StochasticActor) and self.training and not greedy:
+            if not isinstance(self.actor.model, StochasticActor):
+                action = self.action_noise(action)
+
+            if self.config.get('eexplore'):
+                eexplore = self.config.eexplore
+                if hasattr(self, 'ag_curiosity'):
+                    eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
+                mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
+                randoms = np.random.random(action.shape) * (2 * self.action_scale) - self.action_scale
+                action = mask * randoms + (1 - mask) * action
 
         return action
 
