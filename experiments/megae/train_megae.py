@@ -31,15 +31,16 @@ def main(args):
 
   if args.use_config is not None:
     if args.use_config.lower() == 'ant':
-      config = antconfig()
+      config2 = antconfig()
     elif args.use_config.lower() == 'fetch':
-      config = fetchconfig()
+      config2 = fetchconfig()
     elif args.use_config.lower() == 'test':
-      config = testconfig()
+      config2 = testconfig()
     else:
       raise NotImplementedError
 
   merge_args_into_config(args, config)
+  override_config(config, config2)
   
   if config.gamma < 1.: config.clip_target_range = (np.round(-(1 / (1-config.gamma)), 2), 0.)
   if config.gamma == 1: config.clip_target_range = (np.round(- args.env_max_step - 5, 2), 0.)

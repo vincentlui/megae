@@ -131,6 +131,10 @@ def merge_args_into_config(args, config: AttrDict):
 
   return config
 
+def override_config(config: AttrDict, config2:AttrDict):
+  for k, v in config2.__dict__.items():
+    config[k] = v
+  return config
 
 def make_agent_name(config, attr_list, prefix='agent'):
   agent_name = prefix

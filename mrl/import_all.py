@@ -4,7 +4,7 @@ from mrl import Agent, Module, config_to_agent
 
 # Utils
 from mrl.utils.networks import *
-from mrl.utils.misc import AttrDict, add_config_args, merge_args_into_config, make_agent_name, make_activ
+from mrl.utils.misc import AttrDict, add_config_args, merge_args_into_config, make_agent_name, make_activ, override_config
 
 # Replays
 from mrl.replays.online_her_buffer import OnlineHERBuffer
