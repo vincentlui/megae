@@ -72,31 +72,69 @@ def megae_config():
     config.clip_target_range = (-50., 0.)
     config.action_noise = 0.1
     config.eexplore = 0.1
-    config.go_eexplore = 0.1
+    config.go_eexplore = 0.
     config.go_reset_percent = 0.
     config.her = 'rfaab_1_4_3_1_1'
     config.grad_value_clipping = 5.
     config.entropy_coef = 0.1
     return config
-      # config = default_ddpg_config()
-      # config.gamma = 0.98
-      # config.actor_lr = 1e-3
-      # config.critic_lr = 1e-3
-      # config.actor_weight_decay = 0.
-      # config.action_l2_regularization = 1e-1
-      # config.target_network_update_freq = 40
-      # config.target_network_update_frac = 0.05
-      # config.optimize_every = 2
-      # config.batch_size = 128
-      # config.warm_up = 100
-      # config.initial_explore = 100
-      # config.replay_size = int(1e6)
-      # config.clip_target_range = (-50.,0.)
-      # config.action_noise = 0.1
-      # config.eexplore = 0.1
-      # config.go_eexplore = 0.1
-      # config.go_reset_percent = 0.
-      # config.her = 'futureactual_2_2'
-      # config.grad_value_clipping = 5.
-      # config.entropy_coef = 0.1
-      # return config
+
+def fetchconfig():
+  config = megae_config()
+  config.batch_size = 1000
+  config.eexplore = 0.2
+  config.action_noise = 0.1
+  config.grad_value_clipping = -1
+  config.her = 'rfab_2_5_1_2'
+  config.replay_size = int(2.5e6)
+  config.initial_explore = 10000
+  config.warm_up = 5000
+  config.action_l2_regularization = 1e-2
+  config.optimize_every = 2
+  config.target_network_update_freq = 10
+  config.activ = 'relu'
+  return config
+
+
+def antconfig():
+    config = megae_config()
+    config.gamma = 0.99
+    config.batch_size = 1000
+    config.eexplore = 0.1
+    config.go_explore = 0.
+    config.action_noise = 0.1
+    config.grad_value_clipping = -1
+    config.clip_target_range = (-500., 0.)
+    config.her = 'rfab_2_5_1_2'
+    config.replay_size = int(3e6)
+    config.initial_explore = 10000
+    config.warm_up = 5000
+    config.action_l2_regularization = 1e-2
+    config.optimize_every = 2
+    config.target_network_update_freq = 10
+    config.activ = 'relu'
+    return config
+
+def testconfig():
+    config = default_ddpg_config()
+    config.gamma = 0.98
+    config.actor_lr = 1e-3
+    config.critic_lr = 1e-3
+    config.actor_weight_decay = 0.
+    config.action_l2_regularization = 1e-1
+    config.target_network_update_freq = 40
+    config.target_network_update_frac = 0.05
+    config.optimize_every = 2
+    config.batch_size = 128
+    config.warm_up = 100
+    config.initial_explore = 100
+    config.replay_size = int(1e6)
+    config.clip_target_range = (-50.,0.)
+    config.action_noise = 0.1
+    config.eexplore = 0.1
+    config.go_eexplore = 0.
+    config.go_reset_percent = 0.
+    config.her = 'rfab_2_5_1_2'
+    config.grad_value_clipping = 5.
+    config.entropy_coef = 0.1
+    return config

@@ -12,7 +12,7 @@ from mrl.megae.curiosity import DensityMegaeCuriosity
 from mrl.megae.policy import ExplorationActorPolicy
 from mrl.megae.train import MegaeTrain
 from mrl.megae.algo import DDPG2, SAC2
-from mrl.megae.config import megae_config
+from mrl.megae.config import megae_config, antconfig, fetchconfig, testconfig
 from mrl.megae.replay_buffer import MegaeBuffer, Megae2Buffer
 from mrl.megae.normalizer import Normalizer, MeanStdNormalizer
 
@@ -29,6 +29,16 @@ def main(args):
     import multiprocessing as mp
     args.num_envs = max(mp.cpu_count() - 1, 1)
 
+  if args.use_config is not None:
+    if args.use_config.lower() == 'ant':
+      config = antconfig()
+    elif args.use_config.lower() == 'fetch':
+      config = fetchconfig()
+    elif args.use_config.lower() == 'test':
+      config = testconfig()
+    else:
+      raise NotImplementedError
+
   merge_args_into_config(args, config)
   
   if config.gamma < 1.: config.clip_target_range = (np.round(-(1 / (1-config.gamma)), 2), 0.)
@@ -37,7 +47,7 @@ def main(args):
   if args.sparse_reward_shaping:
     config.clip_target_range = (-np.inf, np.inf)
 
-  config.agent_name = make_agent_name(config, ['env','her','layers','seed','tb','ag_curiosity','explore', 'var_context'], prefix=args.prefix)
+  config.agent_name = make_agent_name(config, ['env','her','layers','seed','tb','ag_curiosity','eexplore', 'var_context'], prefix=args.prefix)
 
   # 5. Setup / add basic modules to the config
   config.update(
@@ -290,6 +300,7 @@ if __name__ == '__main__':
   parser.add_argument('--tb', default='', type=str, help='a tag for the agent name / tensorboard')
   parser.add_argument('--epoch_len', default=5000, type=int, help='number of steps between evals')
   parser.add_argument('--num_envs', default=1, type=int, help='number of envs')
+  parser.add_argument('--use_config', default=None, type=str, help='which config to use: {ant, fetch}')
 
   # Make env args
   parser.add_argument('--eval_env', default='', type=str, help='evaluation environment')
