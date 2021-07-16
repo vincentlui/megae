@@ -76,18 +76,18 @@ class ExplorationActorPolicy(mrl.Module):
 
         action = self.numpy(action)
 
-        if isinstance(self.actor.model, StochasticActor) and self.training and not greedy:
+        if self.training and not greedy:
             if not isinstance(self.actor.model, StochasticActor):
                 action = self.action_noise(action)
 
-        if self.config.get('eexplore'):
-            eexplore = self.config.eexplore
-            if hasattr(self, 'ag_curiosity'):
-                if self.config.get('go_eexplore'):
-                    eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
-            mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
-            randoms = np.random.random(action.shape) * (2 * self.action_scale) - self.action_scale
-            action = mask * randoms + (1 - mask) * action
+            if self.config.get('eexplore'):
+                eexplore = self.config.eexplore
+                if hasattr(self, 'ag_curiosity'):
+                    if self.config.get('go_eexplore'):
+                        eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
+                mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
+                randoms = np.random.random(action.shape) * (2 * self.action_scale) - self.action_scale
+                action = mask * randoms + (1 - mask) * action
 
         return action
 
@@ -108,18 +108,18 @@ class ExplorationActorPolicy(mrl.Module):
 
         action = self.numpy(action)
 
-        if isinstance(self.actor.model, StochasticActor) and self.training and not greedy:
+        if self.training and not greedy:
             if not isinstance(self.actor.model, StochasticActor):
                 action = self.action_noise(action)
 
-        if self.config.get('eexplore'):
-            eexplore = self.config.eexplore
-            if hasattr(self, 'ag_curiosity'):
-                if self.config.get('go_eexplore'):
-                    eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
-            mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
-            randoms = np.random.random(action.shape) * (2 * self.action_scale) - self.action_scale
-            action = mask * randoms + (1 - mask) * action
+            if self.config.get('eexplore'):
+                eexplore = self.config.eexplore
+                if hasattr(self, 'ag_curiosity'):
+                    if self.config.get('go_eexplore'):
+                        eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
+                mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
+                randoms = np.random.random(action.shape) * (2 * self.action_scale) - self.action_scale
+                action = mask * randoms + (1 - mask) * action
 
         return action
 
