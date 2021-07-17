@@ -74,7 +74,7 @@ def megae_config():
     config.eexplore = 0.1
     config.go_eexplore = 0.
     config.go_reset_percent = 0.
-    config.her = 'rfaab_1_4_3_1_1'
+    config.her = 'rfab_2_5_1_2'
     config.grad_value_clipping = 5.
     config.entropy_coef = 0.1
     return config

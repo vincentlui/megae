@@ -29,18 +29,18 @@ def main(args):
     import multiprocessing as mp
     args.num_envs = max(mp.cpu_count() - 1, 1)
 
-  if args.use_config is not None:
-    if args.use_config.lower() == 'ant':
-      config2 = antconfig()
-    elif args.use_config.lower() == 'fetch':
-      config2 = fetchconfig()
-    elif args.use_config.lower() == 'test':
-      config2 = testconfig()
-    else:
-      raise NotImplementedError
+  # if args.use_config is not None:
+  #   if args.use_config.lower() == 'ant':
+  #     config2 = antconfig()
+  #   elif args.use_config.lower() == 'fetch':
+  #     config2 = fetchconfig()
+  #   elif args.use_config.lower() == 'test':
+  #     config2 = testconfig()
+  #   else:
+  #     raise NotImplementedError
 
   merge_args_into_config(args, config)
-  override_config(config, config2)
+  # override_config(config, config2)
   
   if config.gamma < 1.: config.clip_target_range = (np.round(-(1 / (1-config.gamma)), 2), 0.)
   if config.gamma == 1: config.clip_target_range = (np.round(- args.env_max_step - 5, 2), 0.)
@@ -232,6 +232,10 @@ def main(args):
   agent = mrl.config_to_agent(config)
 
   if args.visualize_trained_agent:
+    print(agent.ag_curiosity.context_states)
+    agent.config.device = 'cpu'
+    agent.config.go_eexplore=0.1
+    agent.eexplore = 0.0001
     print("Loading agent at epoch {}".format(0))
     agent.load('checkpoint')
     
@@ -245,15 +249,29 @@ def main(args):
 
       for _ in range(10000):
         print("NEW EPISODE")
+        agent.ag_curiosity.go_explore = np.zeros_like(agent.ag_curiosity.go_explore)
         state = env.reset()
         env.render()
         done = False
+        context = agent.ag_curiosity.get_context(state)
+        reward = [-1.]
+        explore = False
         while not done:
           time.sleep(0.02)
-          action = agent.policy(state)
+          if reward[0] > -0.5:
+            explore = True
+          if explore:
+            agent.policy.training = True
+            # agent.ag_curiosity.go_explore += 1.
+            # action = agent.policy(state, greedy=False)
+            action = agent.policy(state, greedy=True, context=context, is_explore=np.array([1.]))
+          else:
+            agent.policy.training = False
+            action = agent.policy(state)
           state, reward, done, info = env.step(action)
           env.render()
-          print(reward[0])
+          context = agent.ag_curiosity.get_context(state)
+          # print(reward[0])
   else:
     ag_buffer = agent.replay_buffer.buffer.BUFF.buffer_ag
     bg_buffer = agent.replay_buffer.buffer.BUFF.buffer_bg
@@ -264,8 +282,6 @@ def main(args):
     render = False
     for epoch in range(int(args.max_steps // args.epoch_len)):
       t = time.time()
-      # if epoch > 15:
-      #   render=True
       agent.train(num_steps=args.epoch_len, render=render)
 
       # VIZUALIZE GOALS
@@ -283,6 +299,8 @@ def main(args):
 
       print("Saving agent at epoch {}".format(epoch))
       agent.save('checkpoint')
+      if args.save_gap is not None and epoch % args.save_gap == 0:
+        agent.save_gap(epoch, subfolder='checkpoint')
 
 
 # 3. Declare args for modules (also parent_folder is required!)
@@ -291,6 +309,7 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="Train DDPG", formatter_class=lambda prog: argparse.RawTextHelpFormatter(prog, max_help_position=100, width=120))
   parser.add_argument('--parent_folder', default='/data/bing/lui/log/megae', type=str, help='where to save progress')
   parser.add_argument('--prefix', type=str, default='proto', help='Prefix for agent name (subfolder where it is saved)')
+  parser.add_argument('--save_gap', default=None, type=int, help="Save every n epochs")
   parser.add_argument('--env', default="FetchPush-v1", type=str, help="gym environment")
   parser.add_argument('--max_steps', default=5000000, type=int, help="maximum number of training steps")
   parser.add_argument('--alg', default='DDPG', type=str, help='algorithm to use (DDPG or SAC)')
