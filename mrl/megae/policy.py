@@ -109,7 +109,7 @@ class ExplorationActorPolicy(mrl.Module):
         action = self.numpy(action)
 
         if self.training and not greedy:
-            if not isinstance(self.actor.model, StochasticActor):
+            if not isinstance(self.expl_actor.model, StochasticActor):
                 action = self.action_noise(action)
 
             if self.config.get('eexplore'):
