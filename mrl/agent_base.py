@@ -144,6 +144,18 @@ class Agent():
     with open(os.path.join(save_folder, 'config.pickle'), 'wb') as f:
       pickle.dump(self.config, f)
 
+  def save_gap(self, epoch, subfolder: Optional[str] = None):
+    save_folder = self.agent_folder
+    subfolder = subfolder or 'checkpoint'
+    folder_epoch = str(epoch)
+    save_folder = os.path.join(save_folder, subfolder, folder_epoch)
+
+    if not os.path.exists(save_folder):
+      os.makedirs(save_folder)
+
+    for module in self.module_dict.values():
+      module.save(save_folder)
+
   def load(self, subfolder: Optional[str] = None):
     """
     Restores state of stateful modules from the agent's folder[/subfolder].
@@ -156,6 +168,7 @@ class Agent():
     
     with open(os.path.join(save_folder, 'config.pickle'), 'rb') as f:
       self.config = pickle.load(f)
+      self.config.device = 'cpu'
 
     for module in self.module_dict.values():
       print("Loading module {}".format(module.module_name))

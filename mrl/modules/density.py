@@ -352,7 +352,7 @@ class FlowDensity(mrl.Module):
     if self.flow_model is None and os.path.exists(path):
       self.lazy_load = save_folder
     else:
-      self.flow_model = torch.load(path)
+      self.flow_model = torch.load(path, map_location=torch.device(self.config.device))
 
 
 """

@@ -179,7 +179,7 @@ class OffPolicyActorCritic(mrl.Module):
 
   def load(self, save_folder : str):
     path = os.path.join(save_folder, self.module_name + '.pt')
-    checkpoint = torch.load(path)
+    checkpoint = torch.load(path, map_location=torch.device(self.config.device))#, map_location=self.config.device)
     self.actor_opt.load_state_dict(checkpoint['actor_opt_state_dict'])
     self.critic_opt.load_state_dict(checkpoint['critic_opt_state_dict'])
 
