@@ -50,6 +50,11 @@ class MegaeBuffer(OnlineHERBuffer):
 
         self.buffer = Buffer(self.size, items)
 
+        if 'demo' in self.module_name:
+            self.fut, self.act, self.ach, self.beh = parse_hindsight_mode(self.config.demo_her)
+        else:
+            self.fut, self.act, self.ach, self.beh = parse_hindsight_mode(self.config.her)
+
     def _process_experience(self, exp):
         if getattr(self, 'logger'):
             self.logger.add_tabular('Replay buffer size', len(self.buffer))

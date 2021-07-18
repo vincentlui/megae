@@ -29,18 +29,20 @@ def main(args):
     import multiprocessing as mp
     args.num_envs = max(mp.cpu_count() - 1, 1)
 
-  # if args.use_config is not None:
-  #   if args.use_config.lower() == 'ant':
-  #     config2 = antconfig()
-  #   elif args.use_config.lower() == 'fetch':
-  #     config2 = fetchconfig()
-  #   elif args.use_config.lower() == 'test':
-  #     config2 = testconfig()
-  #   else:
-  #     raise NotImplementedError
+  if args.use_config is not None:
+    if args.use_config.lower() == 'ant':
+      config2 = antconfig()
+    elif args.use_config.lower() == 'fetch':
+      config2 = fetchconfig()
+    elif args.use_config.lower() == 'test':
+      config2 = testconfig()
+    else:
+      raise NotImplementedError
+  else:
+    config2 = megae_config()
 
+  override_config(config, config2)
   merge_args_into_config(args, config)
-  # override_config(config, config2)
   
   if config.gamma < 1.: config.clip_target_range = (np.round(-(1 / (1-config.gamma)), 2), 0.)
   if config.gamma == 1: config.clip_target_range = (np.round(- args.env_max_step - 5, 2), 0.)
