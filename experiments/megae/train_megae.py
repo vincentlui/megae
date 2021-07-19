@@ -281,7 +281,7 @@ def main(args):
     # EVALUATE
     res = np.mean(agent.eval(num_episodes=30).rewards)
     agent.logger.log_color('Initial test reward (30 eps):', '{:.2f}'.format(res))
-    render = True
+    render = False
     for epoch in range(int(args.max_steps // args.epoch_len)):
       t = time.time()
       agent.train(num_steps=args.epoch_len, render=render)
