@@ -142,16 +142,16 @@ def main(args):
   config.action_noise = ContinuousActionNoise(noise_type, std=ConstantSchedule(args.action_noise))
 
   if args.alg.lower() == 'ddpg': 
-    config.algorithm1 = DDPG2('algorithm1', 'actor', 'critic', clip_target=True)
+    config.algorithm1 = DDPG2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic')
   elif args.alg.lower() == 'sac':
-    config.algorithm1 = SAC2('algorithm1', 'actor', 'critic', clip_target=True)
+    config.algorithm1 = SAC2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic')
   else:
     raise NotImplementedError
 
   if args.alg_expl.lower() == 'ddpg':
-    config.algorithm2 = DDPG2('algorithm2', 'expl_actor', 'expl_critic', is_explore=True)
+    config.algorithm2 = DDPG2('algorithm2', optimize_every=1, actor_name='expl_actor', critic_name='expl_critic', is_explore=True)
   elif args.alg_expl.lower() == 'sac':
-    config.algorithm2 = SAC2('algorithm2', 'expl_actor', 'expl_critic', is_explore=True)
+    config.algorithm2 = SAC2('algorithm2', optimize_every=1, actor_name='expl_actor', critic_name='expl_critic', is_explore=True)
   else:
     raise NotImplementedError
 
@@ -236,7 +236,7 @@ def main(args):
   if args.visualize_trained_agent:
     print(agent.ag_curiosity.context_states)
     agent.config.device = 'cpu'
-    agent.config.go_eexplore=0.1
+    # agent.config.go_eexplore=0.1
     agent.eexplore = 0.0001
     print("Loading agent at epoch {}".format(0))
     agent.load('checkpoint')
@@ -281,7 +281,7 @@ def main(args):
     # EVALUATE
     res = np.mean(agent.eval(num_episodes=30).rewards)
     agent.logger.log_color('Initial test reward (30 eps):', '{:.2f}'.format(res))
-    render = False
+    render = True
     for epoch in range(int(args.max_steps // args.epoch_len)):
       t = time.time()
       agent.train(num_steps=args.epoch_len, render=render)

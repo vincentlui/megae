@@ -9,13 +9,15 @@ import torch.nn.functional as F
 import os
 
 class OffPolicyActorCritic2(OffPolicyActorCritic):
-    def __init__(self, algorithm_name, actor_name='actor', critic_name='critic', replay_buffer_name='replay_buffer',
+    def __init__(self, algorithm_name, optimize_every=1, actor_name='actor', critic_name='critic', replay_buffer_name='replay_buffer',
                  is_explore=False, clip_target=False):
         mrl.Module.__init__(
         self,
         algorithm_name,
         required_agent_modules=['actor','critic','replay_buffer', 'env'],
         locals=locals())
+        self.step = 0
+        self.optimize_every = optimize_every
         self.actor_name = actor_name
         self.critic_name = critic_name
         self.replay_buffer_name = replay_buffer_name
@@ -83,14 +85,16 @@ class OffPolicyActorCritic2(OffPolicyActorCritic):
 
     def _optimize(self):
         if len(self.replay_buffer) > self.config.warm_up:
-            states, actions, rewards, next_states, gammas = self.replay_buffer.sample(
-                self.config.batch_size, append_context=self.is_explore)
+            self.step += 1
+            if self.step % self.optimize_every == 0:
+                states, actions, rewards, next_states, gammas = self.replay_buffer.sample(
+                    self.config.batch_size, append_context=self.is_explore)
 
-            self.optimize_from_batch(states, actions, rewards, next_states, gammas)
+                self.optimize_from_batch(states, actions, rewards, next_states, gammas)
 
-            if self.config.opt_steps % self.config.target_network_update_freq == 0:
-                for target_model, model in self.targets_and_models:
-                    soft_update(target_model, model, self.config.target_network_update_frac)
+                if self.config.opt_steps % self.config.target_network_update_freq == 0:
+                    for target_model, model in self.targets_and_models:
+                        soft_update(target_model, model, self.config.target_network_update_frac)
 
 
 class DDPG2(OffPolicyActorCritic2):
