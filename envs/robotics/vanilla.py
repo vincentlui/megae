@@ -46,7 +46,7 @@ class VanillaGoalEnv(gym.Wrapper):
 
 	def compute_reward(self, achieved, goal, info):
 		dis = goal_distance(achieved, goal)
-		return (dis>self.distance_threshold) - (1. - self.mode)
+		return (dis<=self.distance_threshold) - (1. - self.mode)
 
 	def compute_distance(self, achieved, goal):
 		return np.sqrt(np.sum(np.square(achieved-goal)))
