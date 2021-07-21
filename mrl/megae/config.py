@@ -58,6 +58,7 @@ default_ddpg_config = lambda: AnnotatedAttrDict(
 def megae_config():
     config = default_ddpg_config()
     config.gamma = 0.98
+    config.gamma_expl = 0.95
     config.actor_lr = 1e-3
     config.critic_lr = 1e-3
     config.actor_weight_decay = 0.
@@ -116,7 +117,7 @@ def antconfig():
     return config
 
 def testconfig():
-    config = default_ddpg_config()
+    config = megae_config()
     config.gamma = 0.98
     config.actor_lr = 1e-3
     config.critic_lr = 1e-3

@@ -18,30 +18,17 @@ from mrl.megae.normalizer import Normalizer, MeanStdNormalizer
 
 
 # 2. Get default config and update any defaults (this automatically updates the argparse defaults)
-config = megae_config()
+# config = megae_config()
 
 # 3. Make changes to the argparse below
 
-def main(args):
+def main(args, config):
 
   # 4. Update the config with args, and make the agent name. 
   if args.num_envs is None:
     import multiprocessing as mp
     args.num_envs = max(mp.cpu_count() - 1, 1)
 
-  if args.use_config is not None:
-    if args.use_config.lower() == 'ant':
-      config2 = antconfig()
-    elif args.use_config.lower() == 'fetch':
-      config2 = fetchconfig()
-    elif args.use_config.lower() == 'test':
-      config2 = testconfig()
-    else:
-      raise NotImplementedError
-  else:
-    config2 = megae_config()
-
-  override_config(config, config2)
   merge_args_into_config(args, config)
   
   if config.gamma < 1.: config.clip_target_range = (np.round(-(1 / (1-config.gamma)), 2), 0.)
@@ -101,6 +88,18 @@ def main(args):
       config.ag_curiosity = DensityMegaeCuriosity(max_steps=args.env_max_step,
                                                    num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff,
                                                    keep_dg_percent=args.keep_dg_percent,
+                                                  exploration_percent=args.exploration_percent,
+                                                  num_context=args.num_context,
+                                                  context_var=args.var_context,
+                                                  context_dist=args.context_dist,
+                                                  initial_explore_percent=args.init_explore_percent
+                                                  )
+    elif args.ag_curiosity == 'megaerandkde':
+      config.ag_curiosity = DensityMegaeCuriosity(max_steps=args.env_max_step,
+                                                   num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff,
+                                                   keep_dg_percent=args.keep_dg_percent,
+                                                  randomize=True,
+                                                  alpha=args.alpha,
                                                   exploration_percent=args.exploration_percent,
                                                   num_context=args.num_context,
                                                   context_var=args.var_context,
@@ -304,11 +303,28 @@ def main(args):
       if args.save_gap is not None and epoch % args.save_gap == 0:
         agent.save_gap(epoch, subfolder='checkpoint')
 
+def get_config(config_name):
+  if config_name is not None:
+    if config_name.lower() == 'ant':
+      config2 = antconfig()
+    elif config_name.lower() == 'fetch':
+      config2 = fetchconfig()
+    elif config_name.lower() == 'test':
+      config2 = testconfig()
+    else:
+      raise NotImplementedError
+  else:
+    config2 = megae_config()
+  return config2
+
 
 # 3. Declare args for modules (also parent_folder is required!)
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description="Train DDPG", formatter_class=lambda prog: argparse.RawTextHelpFormatter(prog, max_help_position=100, width=120))
+  parser.add_argument('--use_config', default=None, type=str, help='which config to use: {ant, fetch}')
+  config_arg = parser.parse_known_args()
+  config = get_config(config_arg[0].use_config)
   parser.add_argument('--parent_folder', default='/data/bing/lui/log/megae', type=str, help='where to save progress')
   parser.add_argument('--prefix', type=str, default='proto', help='Prefix for agent name (subfolder where it is saved)')
   parser.add_argument('--save_gap', default=None, type=int, help="Save every n epochs")
@@ -322,7 +338,6 @@ if __name__ == '__main__':
   parser.add_argument('--tb', default='', type=str, help='a tag for the agent name / tensorboard')
   parser.add_argument('--epoch_len', default=5000, type=int, help='number of steps between evals')
   parser.add_argument('--num_envs', default=1, type=int, help='number of envs')
-  parser.add_argument('--use_config', default=None, type=str, help='which config to use: {ant, fetch}')
 
   # Make env args
   parser.add_argument('--eval_env', default='', type=str, help='evaluation environment')
@@ -372,4 +387,4 @@ if __name__ == '__main__':
   import subprocess, sys
   args.launch_command = sys.argv[0] + ' ' + subprocess.list2cmdline(sys.argv[1:])
 
-  main(args)
+  main(args, config)

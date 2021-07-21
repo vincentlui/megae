@@ -129,6 +129,11 @@ class MegaeBuffer(OnlineHERBuffer):
                         next_states, update=False).astype(np.float32)
                 if hasattr(self, 'reward_normalizer'):
                     rewards = self.reward_normalizer(rewards, update=True)
+
+                if self.config.get('gamma_expl'):
+                    gammas = self.config.gamma_expl * (1-dones)
+                else:
+                    gammas = self.config.gamma * (1-dones)
             else:
                 # is_explore = self.buffer.sample(batch_size, batch_idxs)[8]
                 # explore_idx, _ = is_explore.nonzero()
@@ -234,7 +239,7 @@ class MegaeBuffer(OnlineHERBuffer):
                     next_states = self.state_normalizer(
                         next_states, update=False).astype(np.float32)
 
-            gammas = self.config.gamma * (1. - dones)
+                gammas = self.config.gamma * (1. - dones)
 
         # elif self.config.get('n_step_returns') and self.config.n_step_returns > 1:
         #     states, actions, rewards, next_states, dones, contexts = self.buffer.sample_n_step_transitions(
