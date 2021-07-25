@@ -403,17 +403,9 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
     # score the sampled_ags to get log densities, and exponentiate to get densities
     flattened_sampled_ags = sampled_ags.reshape(num_envs * num_sampled_ags, -1)
     sampled_ag_scores = density_module.evaluate_log_density(flattened_sampled_ags)
-    if interest_module:
-      # Interest is ~(det(feature_transform)), so we subtract it  in order to add ~(det(inverse feature_transform)) for COV.
-      sampled_ag_scores -= interest_module.evaluate_log_interest(flattened_sampled_ags)  # add in log interest
     sampled_ag_scores = sampled_ag_scores.reshape(num_envs, num_sampled_ags)  # these are log densities
 
-    # Take softmax of the alpha * log density.
-    # If alpha = -1, this gives us normalized inverse densities (higher is rarer)
-    # If alpha < -1, this skews the density to give us low density samples
-    normalized_inverse_densities = softmax(sampled_ag_scores * self.alpha)
-    normalized_inverse_densities *= -1.  # make negative / reverse order so that lower is better.
-
+    context = self.get_context({'achieved_goal': flattened_sampled_ags})
     return normalized_inverse_densities
 
   def score_states(self, states):

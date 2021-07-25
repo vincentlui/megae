@@ -78,6 +78,7 @@ def megae_config():
     config.her = 'rfab_2_5_1_2'
     config.grad_value_clipping = 5.
     config.entropy_coef = 0.1
+    config.beta = 1.
     return config
 
 def fetchconfig():

@@ -15,6 +15,7 @@ from mrl.megae.algo import DDPG2, SAC2
 from mrl.megae.config import megae_config, antconfig, fetchconfig, testconfig
 from mrl.megae.replay_buffer import MegaeBuffer, Megae2Buffer
 from mrl.megae.normalizer import Normalizer, MeanStdNormalizer
+from mrl.megae.empowerment import InverseDynamicsNetwork, JSMIT, JSMI
 
 
 # 2. Get default config and update any defaults (this automatically updates the argparse defaults)
@@ -55,6 +56,10 @@ def main(args, config):
   state_normalizer2 = Normalizer(MeanStdNormalizer()) # Normalize context states
   state_normalizer2.module_name = 'state_normalizer_expl'
   config.state_normalizer2 = state_normalizer2
+
+  # state_normalizer3 = Normalizer(MeanStdNormalizer())  # Normalize context states
+  # state_normalizer3.module_name = 'state_normalizer_empowerment'
+  # config.state_normalizer3 = state_normalizer3
 
   reward_normalizer = Normalizer(MeanStdNormalizer())  # Normalize context states
   reward_normalizer.module_name = 'reward_normalizer'
@@ -224,6 +229,13 @@ def main(args, config):
   else:
     raise ValueError('Unsupported reward module: {}'.format(args.reward_module))
 
+  # Empowerment
+  if args.use_empowerment:
+    config.empowerment_net = PytorchModel('T',
+                                        lambda: JSMIT(FCBody(e.state_dim + args.num_context + e.goal_dim + e.action_dim, args.layers, nn.LayerNorm,
+                                             make_activ(config.activ))))
+    config.empowerment = JSMI(config.expl_actor, optimize_every=1)
+
   if config.eval_env.goal_env:
     if not (args.first_visit_done or args.first_visit_succ):
       config.never_done = True  # NOTE: This is important in the standard Goal environments, which are never done
@@ -380,6 +392,7 @@ if __name__ == '__main__':
   parser.add_argument('--exploration_percent', default=0.8, type=float, help='percentage of exploration steps')
   parser.add_argument('--context_dist', default='normal', type=str, help='percentage of exploration steps')
   parser.add_argument('--init_explore_percent', default=0., type=float, help='percentage of pure exploration at start')
+  parser.add_argument('--use_empowerment', action='store_true', help='Include empowerment as intrinsic reward')
 
   parser = add_config_args(parser, config)
   args = parser.parse_args()
