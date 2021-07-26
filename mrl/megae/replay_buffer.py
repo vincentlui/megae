@@ -127,10 +127,10 @@ class MegaeBuffer(OnlineHERBuffer):
                     states = self.state_normalizer_expl(states, update=False).astype(np.float32)
                     next_states = self.state_normalizer_expl(
                         next_states, update=False).astype(np.float32)
-                if hasattr(self, 'reward_normalizer'):
-                    rewards = self.reward_normalizer(rewards, update=True)
                 if hasattr(self, 'empowerment'):
                     rewards += self.config.beta * self.empowerment.calc_empowerment(actions, states, ags)
+                if hasattr(self, 'reward_normalizer'):
+                    rewards = self.reward_normalizer(rewards, update=True)
 
                 if self.config.get('gamma_expl'):
                     gammas = self.config.gamma_expl * (1-dones)
