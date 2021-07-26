@@ -369,68 +369,68 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       return density_context_states_normalized
 
 
-class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
-  """
-  Scores goals by their densities (lower is better), using KDE to estimate
-
-  Note on bandwidth: it seems bandwith = 0.1 works pretty well with normalized samples (which is
-  why we normalize the ags).
-  """
-  def __init__(self, density_module='ag_kde', interest_module='ag_interest', alpha=-1.0, **kwargs):
-    super().__init__(**kwargs)
-    self.alpha = alpha
-    self.density_module = density_module
-    self.interest_module = interest_module
-
-  def _setup(self):
-    assert hasattr(self, self.density_module)
-    super()._setup()
-
-  def score_goals(self, sampled_ags, info):
-    """ Lower is better """
-    density_module = getattr(self, self.density_module)
-    if not density_module.ready:
-      density_module._optimize(force=True)
-    interest_module = None
-    if hasattr(self, self.interest_module):
-      interest_module = getattr(self, self.interest_module)
-      if not interest_module.ready:
-        interest_module = None
-
-    # sampled_ags is np.array of shape NUM_ENVS x NUM_SAMPLED_GOALS (both arbitrary)
-    num_envs, num_sampled_ags = sampled_ags.shape[:2]
-
-    # score the sampled_ags to get log densities, and exponentiate to get densities
-    flattened_sampled_ags = sampled_ags.reshape(num_envs * num_sampled_ags, -1)
-    sampled_ag_scores = density_module.evaluate_log_density(flattened_sampled_ags)
-    sampled_ag_scores = sampled_ag_scores.reshape(num_envs, num_sampled_ags)  # these are log densities
-
-    context = self.get_context({'achieved_goal': flattened_sampled_ags})
-    return normalized_inverse_densities
-
-  def score_states(self, states):
-      ag = states['achieved_goal']
-      density_module = getattr(self, self.density_module)
-      if not density_module.ready:
-          # density_module._optimize(force=True)
-        return np.zeros(ag.shape[0])
-      states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
-
-      return states_score
-
-  def get_context(self, states):
-      ag = states['achieved_goal']
-      num_envs = ag.shape[0]
-
-      density_module = getattr(self, self.density_module)
-      if not density_module.ready:
-          # density_module._optimize(force=True)
-        return np.ones((num_envs, self.num_context)) / self.num_context
-
-      ag_tile = np.tile(ag, (self.num_context, )).reshape(num_envs, self.num_context, -1)
-      context_states = ag_tile + self.context_states
-      flattened_context_states = context_states.reshape(num_envs * self.num_context, -1).astype(np.float32)
-      density_context_states = np.exp(density_module.evaluate_log_density(flattened_context_states)\
-          .reshape(num_envs, self.num_context))
-      density_context_states_normalized = density_context_states #/ np.linalg.norm(density_context_states, axis=-1, keepdims=True)
-      return density_context_states_normalized
+# class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
+#   """
+#   Scores goals by their densities (lower is better), using KDE to estimate
+#
+#   Note on bandwidth: it seems bandwith = 0.1 works pretty well with normalized samples (which is
+#   why we normalize the ags).
+#   """
+#   def __init__(self, density_module='ag_kde', interest_module='ag_interest', alpha=-1.0, **kwargs):
+#     super().__init__(**kwargs)
+#     self.alpha = alpha
+#     self.density_module = density_module
+#     self.interest_module = interest_module
+#
+#   def _setup(self):
+#     assert hasattr(self, self.density_module)
+#     super()._setup()
+#
+#   def score_goals(self, sampled_ags, info):
+#     """ Lower is better """
+#     density_module = getattr(self, self.density_module)
+#     if not density_module.ready:
+#       density_module._optimize(force=True)
+#     interest_module = None
+#     if hasattr(self, self.interest_module):
+#       interest_module = getattr(self, self.interest_module)
+#       if not interest_module.ready:
+#         interest_module = None
+#
+#     # sampled_ags is np.array of shape NUM_ENVS x NUM_SAMPLED_GOALS (both arbitrary)
+#     num_envs, num_sampled_ags = sampled_ags.shape[:2]
+#
+#     # score the sampled_ags to get log densities, and exponentiate to get densities
+#     flattened_sampled_ags = sampled_ags.reshape(num_envs * num_sampled_ags, -1)
+#     sampled_ag_scores = density_module.evaluate_log_density(flattened_sampled_ags)
+#     sampled_ag_scores = sampled_ag_scores.reshape(num_envs, num_sampled_ags)  # these are log densities
+#
+#     context = self.get_context({'achieved_goal': flattened_sampled_ags})
+#     return normalized_inverse_densities
+#
+#   def score_states(self, states):
+#       ag = states['achieved_goal']
+#       density_module = getattr(self, self.density_module)
+#       if not density_module.ready:
+#           # density_module._optimize(force=True)
+#         return np.zeros(ag.shape[0])
+#       states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
+#
+#       return states_score
+#
+#   def get_context(self, states):
+#       ag = states['achieved_goal']
+#       num_envs = ag.shape[0]
+#
+#       density_module = getattr(self, self.density_module)
+#       if not density_module.ready:
+#           # density_module._optimize(force=True)
+#         return np.ones((num_envs, self.num_context)) / self.num_context
+#
+#       ag_tile = np.tile(ag, (self.num_context, )).reshape(num_envs, self.num_context, -1)
+#       context_states = ag_tile + self.context_states
+#       flattened_context_states = context_states.reshape(num_envs * self.num_context, -1).astype(np.float32)
+#       density_context_states = np.exp(density_module.evaluate_log_density(flattened_context_states)\
+#           .reshape(num_envs, self.num_context))
+#       density_context_states_normalized = density_context_states #/ np.linalg.norm(density_context_states, axis=-1, keepdims=True)
+#       return density_context_states_normalized

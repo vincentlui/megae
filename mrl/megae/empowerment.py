@@ -98,7 +98,8 @@ class JSMI(Empowerment):
                 #     states = self.state_normalizer_empowerment(input, update=False).astype(np.float32)
                 #     next_states = self.state_normalizer_expl(
                 #         next_states, update=False).astype(np.float32)
-                a_policy, _ = self.behavior_policy(states)
+                with torch.no_grad():
+                    a_policy, _ = self.behavior_policy(states)
                 input2 = torch.cat([a_policy, states, ags], dim=-1)
                 T1 = self.T(input)
                 T2 = self.T(input2)
