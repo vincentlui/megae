@@ -105,9 +105,6 @@ class JSMI(Empowerment):
                 T2 = self.T(input2)
                 loss = torch.mean(F.softplus(-T1) + F.softplus(T2) - self.log4)
 
-                if getattr(self, 'logger'):
-                    self.logger.add_scalar('Explore/Empowerment', T2.mean())
-
                 self.T_opt.zero_grad()
                 loss.backward()
 

@@ -65,7 +65,7 @@ class MegaeBuffer(OnlineHERBuffer):
         next_context = exp.next_context
         reward_expl = np.expand_dims(exp.reward_expl, 1)
         if hasattr(self, 'reward_normalizer'):
-            reward_expl = self.reward_normalizer(reward_expl, update=True)
+            self.reward_normalizer(reward_expl, update=True)
         is_explore = self.ag_curiosity.is_explore
 
         if self.goal_space:
@@ -74,6 +74,10 @@ class MegaeBuffer(OnlineHERBuffer):
             previous_achieved = exp.state['achieved_goal']
             achieved = exp.next_state['achieved_goal']
             desired = exp.state['desired_goal']
+            if hasattr(self, 'empowerment') and hasattr(self, 'reward_emp_normalizer'):
+                r = self.empowerment.calc_empowerment(action, np.concatenate([state, context], axis=-1),
+                                                      achieved)
+                self.reward_emp_normalizer(r, update=True)
             if hasattr(self, 'ag_curiosity') and self.ag_curiosity.current_goals is not None:
                 behavioral = self.ag_curiosity.current_goals
                 # recompute online reward
@@ -120,7 +124,10 @@ class MegaeBuffer(OnlineHERBuffer):
             if append_context:
                 states, actions, rewards, next_states, dones, contexts, next_contexts, reward_expls, _, previous_ags, ags, goals, _ = \
                     self.buffer.sample(batch_size, batch_idxs=batch_idxs)
+
                 rewards = reward_expls
+                if hasattr(self, 'reward_normalizer'):
+                    rewards = self.reward_normalizer(rewards, update=False)
                 states = np.concatenate((states, contexts), -1)
                 next_states = np.concatenate((next_states, next_contexts), -1)
                 if hasattr(self, 'state_normalizer_expl'):
@@ -128,9 +135,12 @@ class MegaeBuffer(OnlineHERBuffer):
                     next_states = self.state_normalizer_expl(
                         next_states, update=False).astype(np.float32)
                 if hasattr(self, 'empowerment'):
-                    rewards += self.config.beta * self.empowerment.calc_empowerment(actions, states, ags)
-                if hasattr(self, 'reward_normalizer'):
-                    rewards = self.reward_normalizer(rewards, update=True)
+                    rewards_empowerment = self.empowerment.calc_empowerment(actions, states, ags)
+                    self.logger.add_scalar('Replay/Empowerment', rewards_empowerment.mean())
+                    self.logger.add_scalar('Replay/Exploration', reward_expls.mean())
+                    if hasattr(self, 'reward_emp_normalizer'):
+                        rewards_empowerment = self.reward_emp_normalizer(rewards_empowerment, update=False)
+                    rewards += self.config.beta * rewards_empowerment
 
                 if self.config.get('gamma_expl'):
                     gammas = self.config.gamma_expl * (1-dones)

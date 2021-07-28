@@ -8,7 +8,7 @@ import gym
 import numpy as np
 import torch.nn as nn
 
-from mrl.megae.curiosity import DensityMegaeCuriosity
+from mrl.megae.curiosity import DensityMegaeCuriosity, DensityAndExplorationMegaeCuriosity
 from mrl.megae.policy import ExplorationActorPolicy
 from mrl.megae.train import MegaeTrain
 from mrl.megae.algo import DDPG2, SAC2
@@ -61,9 +61,13 @@ def main(args, config):
   # state_normalizer3.module_name = 'state_normalizer_empowerment'
   # config.state_normalizer3 = state_normalizer3
 
-  reward_normalizer = Normalizer(MeanStdNormalizer())  # Normalize context states
-  reward_normalizer.module_name = 'reward_normalizer'
-  config.reward_normalizer = reward_normalizer
+  # reward_normalizer = Normalizer(MeanStdNormalizer())  # Normalize context states
+  # reward_normalizer.module_name = 'reward_normalizer'
+  # config.reward_normalizer = reward_normalizer
+  #
+  # reward_normalizer2 = Normalizer(MeanStdNormalizer())  # Normalize context states
+  # reward_normalizer2.module_name = 'reward_emp_normalizer'
+  # config.reward_normalizer2 = reward_normalizer2
 
   config.prioritized_mode = args.prioritized_mode
   if config.prioritized_mode == 'mep':
@@ -113,6 +117,16 @@ def main(args, config):
                                                   )
     elif args.ag_curiosity == 'megaeflow':
       config.ag_curiosity = DensityMegaeCuriosity('ag_flow', max_steps=args.env_max_step,
+                                                   num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff,
+                                                   keep_dg_percent=args.keep_dg_percent,
+                                                  exploration_percent=args.exploration_percent,
+                                                  num_context=args.num_context,
+                                                  context_var=args.var_context,
+                                                  context_dist=args.context_dist,
+                                                  initial_explore_percent=args.init_explore_percent
+                                                  )
+    elif args.ag_curiosity == 'empkde':
+      config.ag_curiosity = DensityAndExplorationMegaeCuriosity('ag_kde', max_steps=args.env_max_step,
                                                    num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff,
                                                    keep_dg_percent=args.keep_dg_percent,
                                                   exploration_percent=args.exploration_percent,
