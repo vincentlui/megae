@@ -414,7 +414,7 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
       # Now consider replacing the current goals with something else:
       if np.any(experience.trajectory_over) and len(self.replay_buffer):
           # how many density samples and exploration samples
-          num_density, num_exploration = np.random.multinomial(self.n_envs, [self.density_percent, 1.])
+          num_density, num_exploration = np.random.multinomial(self.n_envs, [self.density_percent, 1. - self.density_percent])
 
           scores = np.empty((self.n_envs, self.num_sampled_ags))
           sampled_ags = np.empty((self.n_envs, self.num_sampled_ags, self.env.goal_dim))
