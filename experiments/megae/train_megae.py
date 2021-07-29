@@ -57,17 +57,14 @@ def main(args, config):
   state_normalizer2.module_name = 'state_normalizer_expl'
   config.state_normalizer2 = state_normalizer2
 
-  # state_normalizer3 = Normalizer(MeanStdNormalizer())  # Normalize context states
-  # state_normalizer3.module_name = 'state_normalizer_empowerment'
-  # config.state_normalizer3 = state_normalizer3
+  if config.normalize_reward:
+    reward_normalizer = Normalizer(MeanStdNormalizer())
+    reward_normalizer.module_name = 'reward_normalizer'
+    config.reward_normalizer = reward_normalizer
 
-  # reward_normalizer = Normalizer(MeanStdNormalizer())  # Normalize context states
-  # reward_normalizer.module_name = 'reward_normalizer'
-  # config.reward_normalizer = reward_normalizer
-  #
-  # reward_normalizer2 = Normalizer(MeanStdNormalizer())  # Normalize context states
-  # reward_normalizer2.module_name = 'reward_emp_normalizer'
-  # config.reward_normalizer2 = reward_normalizer2
+    reward_normalizer2 = Normalizer(MeanStdNormalizer())
+    reward_normalizer2.module_name = 'reward_emp_normalizer'
+    config.reward_normalizer2 = reward_normalizer2
 
   config.prioritized_mode = args.prioritized_mode
   if config.prioritized_mode == 'mep':
@@ -127,6 +124,7 @@ def main(args, config):
                                                   )
     elif args.ag_curiosity == 'empkde':
       config.ag_curiosity = DensityAndExplorationMegaeCuriosity('ag_kde', max_steps=args.env_max_step,
+                                                  density_percent=args.density_percent,
                                                    num_sampled_ags=args.num_sampled_ags, use_qcutoff=use_qcutoff,
                                                    keep_dg_percent=args.keep_dg_percent,
                                                   exploration_percent=args.exploration_percent,
@@ -407,6 +405,7 @@ if __name__ == '__main__':
   parser.add_argument('--context_dist', default='normal', type=str, help='percentage of exploration steps')
   parser.add_argument('--init_explore_percent', default=0., type=float, help='percentage of pure exploration at start')
   parser.add_argument('--use_empowerment', action='store_true', help='Include empowerment as intrinsic reward')
+  parser.add_argument('--density_percent', default='0.', type=float, help='percentage of goals using density objective')
 
   parser = add_config_args(parser, config)
   args = parser.parse_args()

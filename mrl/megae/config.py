@@ -52,13 +52,14 @@ default_ddpg_config = lambda: AnnotatedAttrDict(
     future_warm_up=(25000, 'minimum steps in replay buffer needed to stop doing ONLY future sampling'),
     sparse_reward_shaping=(0., 'coefficient of euclidean distance reward shaping in sparse goal envs'),
     n_step_returns=(1, 'if using n-step returns, how many steps?'),
-    slot_based_state=(False, 'if state is organized by slot; i.e., [batch_size, num_slots, slot_feats]')
+    slot_based_state=(False, 'if state is organized by slot; i.e., [batch_size, num_slots, slot_feats]'),
+    normalize_reward=(False, 'normalize reward')
 )
 
 def megae_config():
     config = default_ddpg_config()
     config.gamma = 0.98
-    config.gamma_expl = 0.98
+    config.gamma_expl = 0.95
     config.actor_lr = 1e-3
     config.critic_lr = 1e-3
     config.actor_weight_decay = 0.

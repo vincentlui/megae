@@ -377,11 +377,12 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
   Note on bandwidth: it seems bandwith = 0.1 works pretty well with normalized samples (which is
   why we normalize the ags).
   """
-  def __init__(self, density_module='ag_kde', interest_module='ag_interest', alpha=-1.0, **kwargs):
+  def __init__(self, density_module='ag_kde', interest_module='ag_interest', alpha=-1.0, density_percent=0.5, **kwargs):
     super().__init__(**kwargs)
     self.alpha = alpha
     self.density_module = density_module
     self.interest_module = interest_module
+    self.density_percent = density_percent
 
   def _setup(self):
     assert hasattr(self, self.density_module)
@@ -412,21 +413,35 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
 
       # Now consider replacing the current goals with something else:
       if np.any(experience.trajectory_over) and len(self.replay_buffer):
+          # how many density samples and exploration samples
+          num_density, num_exploration = np.random.multinomial(self.n_envs, [self.density_percent, 1.])
+
+          scores = np.empty((self.n_envs, self.num_sampled_ags))
+          sampled_ags = np.empty((self.n_envs, self.num_sampled_ags, self.env.goal_dim))
           # sample some achieved goals
-          s, actions, rewards, next_states, dones, contexts, next_contexts, \
-          reward_expls, _, previous_ags, ags, goals, _ = self.replay_buffer.buffer.sample(self.num_sampled_ags * self.n_envs)
-          sampled_ags = previous_ags.reshape(self.n_envs, self.num_sampled_ags, -1)
+          if num_exploration:
+              s, _, _, _, _, _, _, \
+              _, _, previous_ags, ags, _, _ = self.replay_buffer.buffer.sample(self.num_sampled_ags * num_exploration)
+              s_explore = np.concatenate([s, self.get_context({'achieved_goal': ags})], axis=-1)
+              if hasattr(self, 'state_normalizer_expl'):
+                  s_explore = self.state_normalizer_expl(s_explore, update=False).astype(np.float32)
+              score_expl = self.score_goals_expl(s_explore.reshape(num_exploration, self.num_sampled_ags, -1), None)
+              scores[np.arange(num_exploration)] = score_expl
+              sampled_ags[np.arange(num_exploration)] = previous_ags.reshape(num_exploration, self.num_sampled_ags, -1)
+
+          if num_density:
+              sample_idxs = np.random.randint(len(ag_buffer), size=self.num_sampled_ags * num_density)
+              sampled_ags_density = ag_buffer.get_batch(sample_idxs)
+              sampled_ags_density = sampled_ags_density.reshape(num_density, self.num_sampled_ags, -1)
+              score_density = self.score_goals_density(sampled_ags_density, None)
+              scores[np.arange(num_exploration, self.n_envs)] = score_density
+              sampled_ags[np.arange(num_exploration, self.n_envs)] = sampled_ags_density
 
           # compute the q-values of both the sampled achieved goals and the current goals
           states = np.tile(experience.reset_state['observation'][:, None, :], (1, self.num_sampled_ags, 1))
           states = np.concatenate((states, sampled_ags), -1).reshape(self.num_sampled_ags * self.n_envs, -1)
           states_curr = np.concatenate((experience.reset_state['observation'], self.current_goals), -1)
           states_cat = np.concatenate((states, states_curr), 0)
-
-          s_explore = np.concatenate([s, self.get_context({'achieved_goal':ags})], axis=-1)
-          if hasattr(self, 'state_normalizer_expl'):
-              s_explore = self.state_normalizer_expl(s_explore, update=False).astype(np.float32)
-          # s_explore = np.tile(s_explore[:, None, :], (1, self.num_sampled_ags, 1))
 
           bad_q_idxs, q_values = [], None
           if self.use_qcutoff:
@@ -452,7 +467,7 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
               q_values[bad_q_idxs] *= -1
 
           # score the goals -- lower is better
-          goal_values = self.score_goals(sampled_ags, AttrDict(q_values=q_values, states=states, s_explore=s_explore))
+          goal_values = scores
 
           if self.config.dg_score_multiplier > 1. and self.dg_kde.ready:
               dg_scores = self.dg_kde.evaluate_log_density(
@@ -515,37 +530,7 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
                   self.is_explore[i] = float(np.random.uniform() < self.initial_explore_percent)
                   self.num_steps[i] = 0.
 
-  # def score_goals(self, sampled_ags, info):
-  #   """ Lower is better """
-  #   density_module = getattr(self, self.density_module)
-  #   if not density_module.ready:
-  #     density_module._optimize(force=True)
-  #   interest_module = None
-  #   if hasattr(self, self.interest_module):
-  #     interest_module = getattr(self, self.interest_module)
-  #     if not interest_module.ready:
-  #       interest_module = None
-  #
-  #   # sampled_ags is np.array of shape NUM_ENVS x NUM_SAMPLED_GOALS (both arbitrary)
-  #   num_envs, num_sampled_ags = sampled_ags.shape[:2]
-  #
-  #   # score the sampled_ags to get log densities, and exponentiate to get densities
-  #   flattened_sampled_ags = sampled_ags.reshape(num_envs * num_sampled_ags, -1)
-  #   sampled_ag_scores = density_module.evaluate_log_density(flattened_sampled_ags)
-  #   if interest_module:
-  #     # Interest is ~(det(feature_transform)), so we subtract it  in order to add ~(det(inverse feature_transform)) for COV.
-  #     sampled_ag_scores -= interest_module.evaluate_log_interest(flattened_sampled_ags)  # add in log interest
-  #   sampled_ag_scores = sampled_ag_scores.reshape(num_envs, num_sampled_ags)  # these are log densities
-  #
-  #   # Take softmax of the alpha * log density.
-  #   # If alpha = -1, this gives us normalized inverse densities (higher is rarer)
-  #   # If alpha < -1, this skews the density to give us low density samples
-  #   normalized_inverse_densities = softmax(sampled_ag_scores * self.alpha)
-  #   normalized_inverse_densities *= -1.  # make negative / reverse order so that lower is better.
-  #
-  #   return normalized_inverse_densities
-
-  def score_goals(self, sampled_ags, info):
+  def score_goals_density(self, sampled_ags, info):
     """ Lower is better """
     density_module = getattr(self, self.density_module)
     if not density_module.ready:
@@ -558,21 +543,43 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
 
     # sampled_ags is np.array of shape NUM_ENVS x NUM_SAMPLED_GOALS (both arbitrary)
     num_envs, num_sampled_ags = sampled_ags.shape[:2]
-    s_explore = info.s_explore
 
     # score the sampled_ags to get log densities, and exponentiate to get densities
-    flattened_sampled_ags = s_explore.reshape(num_envs * num_sampled_ags, -1)
-    flattened_sampled_ags = self.torch(flattened_sampled_ags)
-    with torch.no_grad():
-        a, _ = self.expl_actor(flattened_sampled_ags)
-        input = torch.cat([flattened_sampled_ags, a], dim=-1)
-        sampled_ag_scores = torch.min(self.expl_critic(input), self.expl_critic2(input))
-    sampled_ag_scores = self.numpy(sampled_ag_scores).reshape(num_envs, num_sampled_ags)
+    flattened_sampled_ags = sampled_ags.reshape(num_envs * num_sampled_ags, -1)
+    sampled_ag_scores = density_module.evaluate_log_density(flattened_sampled_ags)
+    if interest_module:
+      # Interest is ~(det(feature_transform)), so we subtract it  in order to add ~(det(inverse feature_transform)) for COV.
+      sampled_ag_scores -= interest_module.evaluate_log_interest(flattened_sampled_ags)  # add in log interest
+    sampled_ag_scores = sampled_ag_scores.reshape(num_envs, num_sampled_ags)  # these are log densities
 
-    # normalized_inverse_densities = softmax(sampled_ag_scores * self.alpha)
-    # normalized_inverse_densities *= -1.  # make negative / reverse order so that lower is better.
+    # Take softmax of the alpha * log density.
+    # If alpha = -1, this gives us normalized inverse densities (higher is rarer)
+    # If alpha < -1, this skews the density to give us low density samples
+    normalized_inverse_densities = softmax(sampled_ag_scores * self.alpha)
+    normalized_inverse_densities *= -1.  # make negative / reverse order so that lower is better.
 
-    return sampled_ag_scores
+    return normalized_inverse_densities
+
+  def score_goals_expl(self, sampled_states, info):
+    """ Lower is better """
+    density_module = getattr(self, self.density_module)
+    if not density_module.ready:
+      density_module._optimize(force=True)
+    interest_module = None
+    if hasattr(self, self.interest_module):
+      interest_module = getattr(self, self.interest_module)
+      if not interest_module.ready:
+        interest_module = None
+
+    # sampled_ags is np.array of shape NUM_ENVS x NUM_SAMPLED_GOALS (both arbitrary)
+    num_envs, num_sampled_ags = sampled_states.shape[:2]
+
+    # score the sampled_ags using q values from exploration policy
+    flattened_sampled_ags = sampled_states.reshape(num_envs * num_sampled_ags, -1)
+    scores = self._compute_q_expl(flattened_sampled_ags)
+    scores = scores.reshape(num_envs, num_sampled_ags)
+
+    return scores
 
   def score_states(self, states):
       ag = states['achieved_goal']
@@ -601,3 +608,12 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
           .reshape(num_envs, self.num_context))
       density_context_states_normalized = density_context_states #/ np.linalg.norm(density_context_states, axis=-1, keepdims=True)
       return density_context_states_normalized
+
+  def _compute_q_expl(self, numpy_states):
+      states = self.torch(numpy_states)
+      with torch.no_grad():
+          max_actions = self.expl_actor(states)
+          if isinstance(max_actions, tuple):
+              max_actions = max_actions[0]
+          q_value = torch.min(self.expl_critic(states, max_actions), self.expl_critic2(states, max_actions))
+      return self.numpy(q_value)
