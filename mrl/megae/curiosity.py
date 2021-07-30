@@ -97,7 +97,7 @@ class MegaeCuriosity(mrl.Module):
                                                     self.current_goals[i]))
 
                     # and (self.num_steps[i] >= self.explortation_start_steps
-            if self.is_explore[i] < 0.5 and ( np.random.random() < self.is_success[i] * 0.1): #self.num_steps[i] >= self.explortation_start_steps or
+            if not over and self.is_explore[i] < 0.5 and ( np.random.random() < self.is_success[i] * 0.1): #self.num_steps[i] >= self.explortation_start_steps or
                 self.is_explore[i] = 1.
 
         return reset_idxs, overshooting_idxs, np.array(overshooting_proposals)

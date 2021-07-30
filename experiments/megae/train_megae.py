@@ -159,9 +159,9 @@ def main(args, config):
   config.action_noise = ContinuousActionNoise(noise_type, std=ConstantSchedule(args.action_noise))
 
   if args.alg.lower() == 'ddpg': 
-    config.algorithm1 = DDPG2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic')
+    config.algorithm1 = DDPG2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic', clip_target=True)
   elif args.alg.lower() == 'sac':
-    config.algorithm1 = SAC2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic')
+    config.algorithm1 = SAC2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic', clip_target=True)
   else:
     raise NotImplementedError
 
