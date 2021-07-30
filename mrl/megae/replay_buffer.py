@@ -127,7 +127,7 @@ class MegaeBuffer(OnlineHERBuffer):
 
                 rewards = reward_expls
                 if hasattr(self, 'reward_normalizer'):
-                    rewards = self.reward_normalizer(rewards, update=False)
+                    rewards = self.reward_normalizer(rewards, update=True)
                 states = np.concatenate((states, contexts), -1)
                 next_states = np.concatenate((next_states, next_contexts), -1)
                 if hasattr(self, 'state_normalizer_expl'):
