@@ -62,9 +62,10 @@ def main(args, config):
     reward_normalizer.module_name = 'reward_normalizer'
     config.reward_normalizer = reward_normalizer
 
-    reward_normalizer2 = Normalizer(MeanStdNormalizer())
-    reward_normalizer2.module_name = 'reward_emp_normalizer'
-    config.reward_normalizer2 = reward_normalizer2
+    if args.use_empowerment:
+      reward_normalizer2 = Normalizer(MeanStdNormalizer())
+      reward_normalizer2.module_name = 'reward_emp_normalizer'
+      config.reward_normalizer2 = reward_normalizer2
 
   config.prioritized_mode = args.prioritized_mode
   if config.prioritized_mode == 'mep':

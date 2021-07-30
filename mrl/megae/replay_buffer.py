@@ -65,7 +65,7 @@ class MegaeBuffer(OnlineHERBuffer):
         next_context = exp.next_context
         reward_expl = np.expand_dims(exp.reward_expl, 1)
         if hasattr(self, 'reward_normalizer'):
-            self.reward_normalizer(reward_expl, update=True)
+            reward_expl = self.reward_normalizer(reward_expl, update=True)
         is_explore = self.ag_curiosity.is_explore
 
         if self.goal_space:
