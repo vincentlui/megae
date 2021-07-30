@@ -349,6 +349,7 @@ class DensityMegaeCuriosity(MegaeCuriosity):
           # density_module._optimize(force=True)
         return np.zeros(ag.shape[0])
       states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
+      states_score = np.clip(states_score, -20, 20)
 
       return states_score
 
@@ -364,9 +365,9 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       ag_tile = np.tile(ag, (self.num_context, )).reshape(num_envs, self.num_context, -1)
       context_states = ag_tile + self.context_states
       flattened_context_states = context_states.reshape(num_envs * self.num_context, -1).astype(np.float32)
-      density_context_states = np.exp(density_module.evaluate_log_density(flattened_context_states)\
+      density_context_states = softmax(density_module.evaluate_log_density(flattened_context_states)\
           .reshape(num_envs, self.num_context))
-      density_context_states_normalized = density_context_states #/ np.linalg.norm(density_context_states, axis=-1, keepdims=True)
+      density_context_states_normalized = density_context_states
       return density_context_states_normalized
 
 
@@ -588,7 +589,7 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
           # density_module._optimize(force=True)
         return np.zeros(ag.shape[0])
       states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
-      states_score = np.clip(states_score, 0, 20)
+      states_score = np.clip(states_score, -20, 20)
 
       return states_score
 
