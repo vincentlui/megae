@@ -96,7 +96,7 @@ class MegaeCuriosity(mrl.Module):
                         generate_overshooting_goals(self.num_sampled_ags, step_amount, self.config.direct_overshoots,
                                                     self.current_goals[i]))
 
-                    # and (self.num_steps[i] >= self.explortation_start_steps
+                      # and (self.num_steps[i] >= self.explortation_start_steps
                 if self.is_explore[i] < 0.5 and ( np.random.random() < self.is_success[i] * 0.1): #self.num_steps[i] >= self.explortation_start_steps or
                     self.is_explore[i] = 1.
 
@@ -577,7 +577,7 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
 
     # score the sampled_ags using q values from exploration policy
     flattened_sampled_ags = sampled_states.reshape(num_envs * num_sampled_ags, -1)
-    scores = self._compute_q_expl(flattened_sampled_ags)
+    scores = -1 * self._compute_q_expl(flattened_sampled_ags)
     scores = scores.reshape(num_envs, num_sampled_ags)
 
     return scores
@@ -605,7 +605,7 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
       ag_tile = np.tile(ag, (self.num_context, )).reshape(num_envs, self.num_context, -1)
       context_states = ag_tile + self.context_states
       flattened_context_states = context_states.reshape(num_envs * self.num_context, -1).astype(np.float32)
-      density_context_states = np.exp(density_module.evaluate_log_density(flattened_context_states)\
+      density_context_states = softmax(density_module.evaluate_log_density(flattened_context_states)\
           .reshape(num_envs, self.num_context))
       density_context_states_normalized = density_context_states #/ np.linalg.norm(density_context_states, axis=-1, keepdims=True)
       return density_context_states_normalized
