@@ -47,7 +47,7 @@ default_ddpg_config = lambda: AnnotatedAttrDict(
     log_every=(5000, 'how often to log things'),
     varied_action_noise=(False, 'if true, action noise for each env in vecenv is interpolated between 0 and action noise'),
     use_actor_target=(False, 'if true, use actor target network to act in the environment'),
-    her=('futureactual_2_2', 'strategy to use for hindsight experience replay'),
+    her=('rfab_2_5_1_2', 'strategy to use for hindsight experience replay'),
     prioritized_mode=('none', 'buffer prioritization strategy'),
     future_warm_up=(25000, 'minimum steps in replay buffer needed to stop doing ONLY future sampling'),
     sparse_reward_shaping=(0., 'coefficient of euclidean distance reward shaping in sparse goal envs'),
@@ -79,7 +79,9 @@ def megae_config():
     config.her = 'rfab_2_5_1_2'
     config.grad_value_clipping = 5.
     config.entropy_coef = 0.1
-    config.beta = 1.
+    config.beta = 0.5
+    config.clip_density = 5.
+    config.clip_empowerment = 10.
     return config
 
 def fetchconfig():

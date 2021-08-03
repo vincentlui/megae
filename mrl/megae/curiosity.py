@@ -97,7 +97,7 @@ class MegaeCuriosity(mrl.Module):
                                                     self.current_goals[i]))
 
                       # and (self.num_steps[i] >= self.explortation_start_steps
-                if self.is_explore[i] < 0.5 and ( np.random.random() < self.is_success[i] * 0.1): #self.num_steps[i] >= self.explortation_start_steps or
+                if self.is_explore[i] < 0.5 and ( np.random.random() < self.is_success[i] * 0.2): #self.num_steps[i] >= self.explortation_start_steps or
                     self.is_explore[i] = 1.
 
         return reset_idxs, overshooting_idxs, np.array(overshooting_proposals)
@@ -349,7 +349,8 @@ class DensityMegaeCuriosity(MegaeCuriosity):
           # density_module._optimize(force=True)
         return np.zeros(ag.shape[0])
       states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
-      states_score = np.clip(states_score, -20, 20)
+      if self.config.clip_density:
+        states_score = np.clip(states_score, -self.config.clip_density, self.config.clip_density)
 
       return states_score
 
@@ -589,7 +590,8 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
           # density_module._optimize(force=True)
         return np.zeros(ag.shape[0])
       states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
-      states_score = np.clip(states_score, -20, 20)
+      if self.config.clip_density:
+        states_score = np.clip(states_score, -self.config.clip_density, self.config.clip_density)
 
       return states_score
 

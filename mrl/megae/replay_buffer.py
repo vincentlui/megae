@@ -65,7 +65,7 @@ class MegaeBuffer(OnlineHERBuffer):
         next_context = exp.next_context
         reward_expl = np.expand_dims(exp.reward_expl, 1)
         if hasattr(self, 'reward_normalizer'):
-            reward_expl = self.reward_normalizer(reward_expl, update=True)
+            self.reward_normalizer(reward_expl, update=True)
         is_explore = self.ag_curiosity.is_explore
 
         if self.goal_space:
@@ -125,22 +125,24 @@ class MegaeBuffer(OnlineHERBuffer):
                 states, actions, rewards, next_states, dones, contexts, next_contexts, reward_expls, _, previous_ags, ags, goals, _ = \
                     self.buffer.sample(batch_size, batch_idxs=batch_idxs)
 
-                rewards = reward_expls
                 if hasattr(self, 'reward_normalizer'):
-                    rewards = self.reward_normalizer(rewards, update=False)
+                    reward_expls = self.reward_normalizer(rewards, update=False)
+                rewards = reward_expls
+
                 states = np.concatenate((states, contexts), -1)
                 next_states = np.concatenate((next_states, next_contexts), -1)
                 if hasattr(self, 'state_normalizer_expl'):
                     states = self.state_normalizer_expl(states, update=False).astype(np.float32)
                     next_states = self.state_normalizer_expl(
                         next_states, update=False).astype(np.float32)
+
                 if hasattr(self, 'empowerment'):
                     rewards_empowerment = self.empowerment.calc_empowerment(actions, states, ags)
                     self.logger.add_scalar('Replay/Empowerment', rewards_empowerment.mean())
                     self.logger.add_scalar('Replay/Exploration', reward_expls.mean())
                     if hasattr(self, 'reward_emp_normalizer'):
                         rewards_empowerment = self.reward_emp_normalizer(rewards_empowerment, update=False)
-                    rewards += self.config.beta * rewards_empowerment
+                    rewards = (1-self.config.beta) * reward_expls + self.config.beta * rewards_empowerment
 
                 if self.config.get('gamma_expl'):
                     gammas = self.config.gamma_expl * (1-dones)

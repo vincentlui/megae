@@ -103,7 +103,13 @@ class JSMI(Empowerment):
                 input2 = torch.cat([a_policy, states, ags], dim=-1)
                 T1 = self.T(input)
                 T2 = self.T(input2)
+                if self.config.clip_empowerment:
+                    T1 = torch.clip(T1, -self.config.clip_empowerment, self.config.clip_empowerment)
+                    T2 = torch.clip(T2, -self.config.clip_empowerment, self.config.clip_empowerment)
                 loss = torch.mean(F.softplus(-T1) + F.softplus(T2) - self.log4)
+
+                if hasattr(self, 'logger'):
+                    self.logger.add_scalar('Optimize/JSMI_loss', loss.item())
 
                 self.T_opt.zero_grad()
                 loss.backward()
@@ -125,7 +131,10 @@ class JSMI(Empowerment):
             states = self.torch(states)
             next_states = self.torch(next_states)
         input = torch.cat([actions, states, next_states], dim=-1)
-        return self.numpy(self.T(input))
+        empowerment = self.numpy(self.T(input))
+        if self.config.clip_empowerment:
+            empowerment = np.clip(empowerment, -self.config.clip_empowerment, self.config.clip_empowerment)
+        return empowerment
 
     def save(self, save_folder: str):
         path = os.path.join(save_folder, self.module_name + '.pt')

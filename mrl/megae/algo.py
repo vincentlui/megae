@@ -156,6 +156,10 @@ class DDPG2(OffPolicyActorCritic2):
         for p in self.critic_params:
             p.requires_grad = True
 
+        if hasattr(self, 'logger'):
+            self.logger.add_scalar(f'Optimize/{self.module_name}/critic_loss', critic_loss.item())
+            self.logger.add_scalar(f'Optimize/{self.module_name}/actor_loss', actor_loss.item())
+
 
 class SAC2(OffPolicyActorCritic2):
 
@@ -217,3 +221,10 @@ class SAC2(OffPolicyActorCritic2):
 
         for p in self.critic_params:
             p.requires_grad = True
+
+        if hasattr(self, 'logger'):
+            self.logger.add_scalar(f'Optimize/{self.module_name}/q1', q1.mean().item())
+            self.logger.add_scalar(f'Optimize/{self.module_name}/q2', q2.mean().item())
+            self.logger.add_scalar(f'Optimize/{self.module_name}/logp', logp.mean().item())
+            self.logger.add_scalar(f'Optimize/{self.module_name}/critic_loss', critic_loss.item())
+            self.logger.add_scalar(f'Optimize/{self.module_name}/actor_loss', actor_loss.item())
