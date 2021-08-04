@@ -10,7 +10,7 @@ import os
 
 class OffPolicyActorCritic2(OffPolicyActorCritic):
     def __init__(self, algorithm_name, optimize_every=1, actor_name='actor', critic_name='critic', replay_buffer_name='replay_buffer',
-                 is_explore=False, clip_target=False):
+                 is_explore=False, clip_target_range=None):
         mrl.Module.__init__(
         self,
         algorithm_name,
@@ -22,7 +22,7 @@ class OffPolicyActorCritic2(OffPolicyActorCritic):
         self.critic_name = critic_name
         self.replay_buffer_name = replay_buffer_name
         self.is_explore = is_explore
-        self.clip_target = clip_target
+        self.clip_target_range = clip_target_range
 
     def _setup(self):
         """Sets up actor/critic optimizers and creates target network modules"""
@@ -104,11 +104,11 @@ class DDPG2(OffPolicyActorCritic2):
         with torch.no_grad():
             q_next = self.critic_algo_target(next_states, self.actor_algo_target(next_states))
             target = (rewards + gammas * q_next)
-            if self.clip_target:
-                target = torch.clamp(target, *self.config.clip_target_range)
+            if self.clip_target_range:
+                target = torch.clamp(target, *self.clip_target_range)
 
         if hasattr(self, 'logger') and self.config.opt_steps % 1000 == 0:
-            self.logger.add_histogram('Optimize/Target_q', target)
+            self.logger.add_histogram(f'Optimize/{self.module_name}/Target_q', target)
 
         q = self.critic_algo(states, actions)
         critic_loss = F.mse_loss(q, target)
@@ -177,11 +177,11 @@ class SAC2(OffPolicyActorCritic2):
             q1 = self.critic_algo_target(next_states, a_next)
             q2 = self.critic2_algo_target(next_states, a_next)
             target = rewards + gammas * (torch.min(q1, q2) - config.entropy_coef * logp_next)
-            if self.clip_target:
-                target = torch.clamp(target, *self.config.clip_target_range)
+            if self.clip_target_range:
+                target = torch.clamp(target, *self.clip_target_range)
 
         if hasattr(self, 'logger') and self.config.opt_steps % 1000 == 0:
-            self.logger.add_histogram('Optimize/Target_q', target)
+            self.logger.add_histogram(f'Optimize/{self.module_name}/Target_q', target)
 
         q1, q2 = self.critic_algo(states, actions), self.critic2_algo(states, actions)
         critic_loss = F.mse_loss(q1, target) + F.mse_loss(q2, target)
