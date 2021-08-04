@@ -362,7 +362,7 @@ if __name__ == '__main__':
   parser.add_argument('--noise_type', default='Gaussian', type=str, help='type of action noise (Gaussian or OU)')
   parser.add_argument('--tb', default='', type=str, help='a tag for the agent name / tensorboard')
   parser.add_argument('--epoch_len', default=5000, type=int, help='number of steps between evals')
-  parser.add_argument('--num_envs', default=1, type=int, help='number of envs')
+  # parser.add_argument('--num_envs', default=1, type=int, help='number of envs')
 
   # Make env args
   parser.add_argument('--eval_env', default='', type=str, help='evaluation environment')

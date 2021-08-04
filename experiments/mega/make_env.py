@@ -10,6 +10,9 @@ from envs.robotics.vanilla import VanillaGoalEnv
 from envs.robotics.fetch.push_labyrinth import FetchPushLabyrinthEnv
 from envs.robotics.fetch.pick_obstacle import FetchPickObstacleEnv
 from envs.robotics.fetch.pick_and_throw import FetchPickAndThrowEnv
+from envs.robotics.fetch.push_noobstacle import FetchPushNoObstacleEnv
+from envs.robotics.fetch.push_obstacle import FetchPushObstacleEnv
+
 try:
   import envs.spritelu
   from envs.spritelu.spriteworld.configs.protoge.moat import make_moat_env 
@@ -116,9 +119,15 @@ def make_env(args):
   elif args.env.lower()=='fetchpickobstacle':
     env_fn = lambda: VanillaGoalEnv(FetchPickObstacleEnv(), max_step=args.env_max_step)
     eval_env_fn = lambda: VanillaGoalEnv(FetchPickObstacleEnv(), max_step=args.env_max_step)
-  elif args.env.lower()=='fetchpickAndthrow':
+  elif args.env.lower()=='fetchpickandthrow':
     env_fn = lambda: VanillaGoalEnv(FetchPickAndThrowEnv(), max_step=args.env_max_step)
     eval_env_fn = lambda: VanillaGoalEnv(FetchPickAndThrowEnv(), max_step=args.env_max_step)
+  elif args.env.lower()=='fetchpushnoobstacle':
+    env_fn = lambda: VanillaGoalEnv(FetchPushNoObstacleEnv(), max_step=args.env_max_step)
+    eval_env_fn = lambda: VanillaGoalEnv(FetchPushNoObstacleEnv(), max_step=args.env_max_step)
+  elif args.env.lower()=='fetchpushobstacle':
+    env_fn = lambda: VanillaGoalEnv(FetchPushObstacleEnv(), max_step=args.env_max_step)
+    eval_env_fn = lambda: VanillaGoalEnv(FetchPushObstacleEnv(), max_step=args.env_max_step)
   else:
     env, external, internal = args.env.split('_')
     if external.lower() == 'all':

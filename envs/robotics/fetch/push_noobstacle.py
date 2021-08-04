@@ -5,7 +5,8 @@ import numpy as np
 from gym.envs.robotics import rotations, robot_env, utils
 
 # Ensure we get the path separator correct on windows
-MODEL_XML_PATH = os.path.join('fetch', 'push_noobstacle.xml')
+dir_path = os.path.dirname(os.path.realpath(__file__))
+MODEL_XML_PATH = os.path.join(dir_path, '../assets/fetch', 'push_noobstacle.xml')
 
 def goal_distance(goal_a, goal_b):
     assert goal_a.shape == goal_b.shape
