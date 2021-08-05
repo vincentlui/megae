@@ -64,24 +64,27 @@ def megae_config():
     config.critic_lr = 1e-3
     config.actor_weight_decay = 0.
     config.action_l2_regularization = 1e-1
-    config.target_network_update_freq = 40
+    config.target_network_update_freq = 10
     config.target_network_update_frac = 0.05
-    config.optimize_every = 1
+    config.optimize_every = 4
     config.batch_size = 2000
     config.warm_up = 2500
     config.initial_explore = 5000
     config.replay_size = int(1e6)
     config.clip_target_range = (-50., 0.)
     config.action_noise = 0.1
-    config.eexplore = 0.1
+    config.eexplore = 0.
     config.go_eexplore = 0.
     config.go_reset_percent = 0.
     config.her = 'rfab_2_5_1_2'
     config.grad_value_clipping = 5.
     config.entropy_coef = 0.1
-    config.beta = 0.5
-    config.clip_density = 5.
-    config.clip_empowerment = 10.
+    config.beta = 0.2
+    config.clip_density = 20.
+    config.clip_empowerment = 20.
+    config.reward_scale = 0.1
+    config.emp_lr = 1e-2
+    config.expl_diff = False
     return config
 
 def fetchconfig():
@@ -136,7 +139,7 @@ def testconfig():
     config.replay_size = int(1e6)
     config.clip_target_range = (-50.,0.)
     config.action_noise = 0.1
-    config.eexplore = 0.1
+    config.eexplore = 0.
     config.go_eexplore = 0.
     config.go_reset_percent = 0.
     config.her = 'rfab_2_5_1_2'

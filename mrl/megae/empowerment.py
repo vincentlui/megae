@@ -77,8 +77,8 @@ class JSMI(Empowerment):
         self.T_params = self.T.model.parameters()
         self.T_opt = torch.optim.Adam(
             self.T_params,
-            lr=self.config.actor_lr, #inverse_dyn_lr,
-            weight_decay=self.config.actor_weight_decay) #inverse_dyn_weight_decay)
+            lr=self.config.emp_lr,
+            weight_decay=self.config.actor_weight_decay)
 
     def _optimize(self):
         # sample

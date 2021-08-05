@@ -176,7 +176,7 @@ class SAC2(OffPolicyActorCritic2):
             a_next, logp_next = self.actor_algo(next_states)
             q1 = self.critic_algo_target(next_states, a_next)
             q2 = self.critic2_algo_target(next_states, a_next)
-            target = rewards + gammas * (torch.min(q1, q2) - config.entropy_coef * logp_next)
+            target = config.reward_scale * rewards + gammas * (torch.min(q1, q2) - config.entropy_coef * logp_next)
             if self.clip_target_range:
                 target = torch.clamp(target, *self.clip_target_range)
 

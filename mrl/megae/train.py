@@ -26,6 +26,7 @@ class MegaeTrain(mrl.Module):
         env = self.env
         state = env.state
         context = self.get_context(state)
+        reward_expl = self.ag_curiosity.score_states(state)
 
         for _ in range(num_steps // env.num_envs):
             action = self.policy(state, context=context, is_explore=self.ag_curiosity.is_explore)
@@ -45,7 +46,10 @@ class MegaeTrain(mrl.Module):
                 self.reset_idxs = []
 
             next_context = self.get_context(next_state)
-            reward_expl = self.ag_curiosity.score_states(next_state)
+            if self.config.expl_diff:
+                reward_expl = self.ag_curiosity.score_states(next_state) - reward_expl
+            else:
+                reward_expl = self.ag_curiosity.score_states(next_state)
             state, experience = debug_vectorized_experience(state, action, next_state, reward, done, info, context, next_context, reward_expl)
             context = next_context
             self.process_experience(experience)

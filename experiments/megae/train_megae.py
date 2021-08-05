@@ -166,12 +166,12 @@ def main(args, config):
     raise NotImplementedError
 
   clip_target_range_expl = (-np.inf, np.inf)
-  if config.get('clip_density') or config.get('clip_empowerment'):
-    max_reward = config.clip_density + config.clip_empowerment
-    gamma = config.gamma_expl if config.get('gamma_expl') else config.gamma
-    if config.gamma < 1.:
-      sum = np.round(max_reward / (1 - gamma), 2)
-      clip_target_range_expl = (-sum, sum)
+  # if config.get('clip_density') or config.get('clip_empowerment'):
+  #   max_reward = config.clip_density + config.clip_empowerment
+  #   gamma = config.gamma_expl if config.get('gamma_expl') else config.gamma
+  #   if config.gamma < 1.:
+  #     sum = np.round(max_reward / (1 - gamma), 2)
+  #     clip_target_range_expl = (-sum, sum)
   if args.alg_expl.lower() == 'ddpg':
     config.algorithm2 = DDPG2('algorithm2', optimize_every=1, actor_name='expl_actor', critic_name='expl_critic',
                               is_explore=True, clip_target_range=clip_target_range_expl)
