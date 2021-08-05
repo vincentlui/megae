@@ -145,9 +145,9 @@ class MegaeBuffer(OnlineHERBuffer):
                     rewards = (1-self.config.beta) * reward_expls + self.config.beta * rewards_empowerment
 
                 if self.config.get('gamma_expl'):
-                    gammas = self.config.gamma_expl * np.ones_like(dones)#* (1-dones)
+                    gammas = self.config.gamma_expl * np.zeros_like(dones)#* (1-dones)
                 else:
-                    gammas = self.config.gamma * np.ones_like(dones)#* (1-dones)
+                    gammas = self.config.gamma * np.zeros_like(dones)#* (1-dones)
             else:
                 # is_explore = self.buffer.sample(batch_size, batch_idxs)[8]
                 # explore_idx, _ = is_explore.nonzero()
