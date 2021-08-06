@@ -254,7 +254,7 @@ def main(args, config):
   # Empowerment
   if args.use_empowerment:
     config.empowerment_net = PytorchModel('T',
-                                        lambda: JSMIT(FCBody(e.state_dim + args.num_context + e.goal_dim + e.action_dim, args.layers, nn.LayerNorm,
+                                        lambda: JSMIT(FCBody(e.state_dim + e.goal_dim + e.action_dim, args.layers, nn.LayerNorm,
                                              make_activ(config.activ))))
     config.empowerment = JSMI(config.expl_actor, optimize_every=1)
 

@@ -75,8 +75,7 @@ class MegaeBuffer(OnlineHERBuffer):
             achieved = exp.next_state['achieved_goal']
             desired = exp.state['desired_goal']
             if hasattr(self, 'empowerment') and hasattr(self, 'reward_emp_normalizer'):
-                r = self.empowerment.calc_empowerment(action, np.concatenate([state, context], axis=-1),
-                                                      achieved)
+                r = self.empowerment.calc_empowerment(action, state, achieved)
                 self.reward_emp_normalizer(r, update=True)
             if hasattr(self, 'ag_curiosity') and self.ag_curiosity.current_goals is not None:
                 behavioral = self.ag_curiosity.current_goals
@@ -89,7 +88,6 @@ class MegaeBuffer(OnlineHERBuffer):
                 desired[is_explore_idx] = exp.next_state['achieved_goal'][is_explore_idx]
                 behavioral[is_explore_idx] = exp.next_state['achieved_goal'][is_explore_idx]
             if self.config.get('initial_explore') and len(self.replay_buffer) < self.config.initial_explore:
-                desired = exp.next_state['achieved_goal']
                 behavioral = exp.next_state['achieved_goal']
             for i in range(self.n_envs):
                 self._subbuffers[i].append([
@@ -129,13 +127,6 @@ class MegaeBuffer(OnlineHERBuffer):
                     reward_expls = self.reward_normalizer(rewards, update=False)
                 rewards = reward_expls
 
-                states = np.concatenate((states, contexts), -1)
-                next_states = np.concatenate((next_states, next_contexts), -1)
-                if hasattr(self, 'state_normalizer_expl'):
-                    states = self.state_normalizer_expl(states, update=False).astype(np.float32)
-                    next_states = self.state_normalizer_expl(
-                        next_states, update=False).astype(np.float32)
-
                 if hasattr(self, 'empowerment'):
                     rewards_empowerment = self.empowerment.calc_empowerment(actions, states, ags)
                     self.logger.add_scalar('Replay/Empowerment', rewards_empowerment.mean())
@@ -143,6 +134,13 @@ class MegaeBuffer(OnlineHERBuffer):
                     if hasattr(self, 'reward_emp_normalizer'):
                         rewards_empowerment = self.reward_emp_normalizer(rewards_empowerment, update=False)
                     rewards = (1-self.config.beta) * reward_expls + self.config.beta * rewards_empowerment
+
+                states = np.concatenate((states, contexts), -1)
+                next_states = np.concatenate((next_states, next_contexts), -1)
+                if hasattr(self, 'state_normalizer_expl'):
+                    states = self.state_normalizer_expl(states, update=False).astype(np.float32)
+                    next_states = self.state_normalizer_expl(
+                        next_states, update=False).astype(np.float32)
 
                 if self.config.get('gamma_expl'):
                     gammas = self.config.gamma_expl * np.zeros_like(dones)#* (1-dones)

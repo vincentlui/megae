@@ -12,7 +12,7 @@ from gym.utils import seeding
 
 class HumanoidMazeEnv(gym.GoalEnv):
   """Wraps the HIRO/SR Ant Environments in a gym goal env."""
-  def __init__(self, variant='HumCorridor', eval=False):
+  def __init__(self, variant='HumCorridor', eval=False, max_step=500):
 
     self.done_env = False
     if eval:
@@ -20,6 +20,7 @@ class HumanoidMazeEnv(gym.GoalEnv):
     else:
       self.dist_threshold = np.sqrt(2)
     state_dims = 48
+    self.max_steps = max_step
     
     
     mazename = variant.split('-')
@@ -44,17 +45,16 @@ class HumanoidMazeEnv(gym.GoalEnv):
         else: # HIRO VERSION
           self.sample_goal = lambda: np.array([0., 16.], dtype=np.float32)
     else:
-      mazename = mazename[0]
-      self.goal_dims = [0, 1, 3, 4]
-      self.eval_dims = [0, 1, 2, 3]
-      state_dims = 33
+      # mazename = mazename[0]
+      # self.goal_dims = [0, 1, 3, 4]
+      # self.eval_dims = [0, 1, 2, 3]
 
       raise ValueError('Bad maze name!')
 
 
     self.maze = create_maze_env(mazename) # this returns a gym environment
     self.seed()
-    self.max_steps = 500
+    # self.max_steps = 500
     self.dist_threshold = 1.0
 
 

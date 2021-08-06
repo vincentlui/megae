@@ -87,20 +87,19 @@ class JSMI(Empowerment):
             if self.step % self.optimize_every == 0:
                 states, actions, rewards, next_states, dones, contexts, next_contexts, reward_expls, _, previous_ags, ags, goals, _ = \
                     self.replay_buffer.buffer.sample(self.config.batch_size)
-                states = np.concatenate([states, contexts], axis=-1)
+                states_ags = np.concatenate([states, ags], axis=-1)
+                if hasattr(self, 'state_normalizer'):
+                    states_ags = self.state_normalizer(states_ags, update=False).astype(np.float32)
+                states_contexts = np.concatenate([states, contexts], axis=-1)
                 if hasattr(self, 'state_normalizer_expl'):
-                    states = self.state_normalizer_expl(states, update=False).astype(np.float32)
-                states = self.torch(states)
+                    states_contexts = self.state_normalizer_expl(states_contexts, update=False).astype(np.float32)
+                states_ags = self.torch(states_ags)
+                states_contexts = self.torch(states_contexts)
                 actions = self.torch(actions)
-                ags = self.torch(ags)
-                input = torch.cat([actions, states, ags], dim=-1)
-                # if hasattr(self, 'state_normalizer_empowerment'):
-                #     states = self.state_normalizer_empowerment(input, update=False).astype(np.float32)
-                #     next_states = self.state_normalizer_expl(
-                #         next_states, update=False).astype(np.float32)
+                input = torch.cat([actions, states_ags], dim=-1)
                 with torch.no_grad():
-                    a_policy, _ = self.behavior_policy(states)
-                input2 = torch.cat([a_policy, states, ags], dim=-1)
+                    a_policy, _ = self.behavior_policy(states_contexts)
+                input2 = torch.cat([a_policy, states_ags], dim=-1)
                 T1 = self.T(input)
                 T2 = self.T(input2)
                 if self.config.clip_empowerment:
@@ -127,10 +126,14 @@ class JSMI(Empowerment):
 
     def calc_empowerment(self, actions, states, next_states):
         if not isinstance(actions, torch.Tensor):
+            states_ags = np.concatenate([states, next_states], axis=-1)
+            if hasattr(self, 'state_normalizer'):
+                states_ags = self.state_normalizer(states_ags, update=False).astype(np.float32)
             actions = self.torch(actions)
-            states = self.torch(states)
-            next_states = self.torch(next_states)
-        input = torch.cat([actions, states, next_states], dim=-1)
+            states_ags = self.torch(states_ags)
+        else:
+            states_ags = torch.cat([states, next_states])
+        input = torch.cat([actions, states_ags], dim=-1)
         empowerment = self.numpy(self.T(input))
         if self.config.clip_empowerment:
             empowerment = np.clip(empowerment, -self.config.clip_empowerment, self.config.clip_empowerment)

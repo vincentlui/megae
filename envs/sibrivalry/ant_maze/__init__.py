@@ -12,7 +12,7 @@ from gym.utils import seeding
 
 class AntMazeEnv(gym.GoalEnv):
   """Wraps the HIRO/SR Ant Environments in a gym goal env."""
-  def __init__(self, variant='AntMaze-SR', eval=False):
+  def __init__(self, variant='AntMaze-SR', eval=False, max_step=500):
 
     self.done_env = False
     if eval:
@@ -20,6 +20,7 @@ class AntMazeEnv(gym.GoalEnv):
     else:
       self.dist_threshold = np.sqrt(2)
     state_dims = 30
+    self.max_steps = max_step
     
     
     mazename = variant.split('-')
@@ -62,7 +63,6 @@ class AntMazeEnv(gym.GoalEnv):
 
     self.maze = create_maze_env(mazename) # this returns a gym environment
     self.seed()
-    self.max_steps = 500
     self.dist_threshold = 1.0
 
 

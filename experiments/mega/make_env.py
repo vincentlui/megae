@@ -48,14 +48,14 @@ def make_env(args):
       env_fn = lambda: AntMazeEnv(variant='AntMaze-HIRO', eval=False)
       eval_env_fn = lambda: AntMazeEnv(variant='AntMaze-HIRO', eval=True)
     elif 'gg' in args.env.lower():
-      env_fn = lambda: GGAntMaze(eval=False)
-      eval_env_fn = lambda: GGAntMaze(eval=True)
+      env_fn = lambda: GGAntMaze(eval=False, max_step=args.env_max_step)
+      eval_env_fn = lambda: GGAntMaze(eval=True, max_step=args.env_max_step)
     else:
       env_fn = lambda: AntMazeEnv(variant='AntMaze-SR', eval=False)
       eval_env_fn = lambda: AntMazeEnv(variant='AntMaze-SR', eval=True)
   elif 'antcorridor' in args.env.lower():
-    env_fn = lambda: AntMazeEnv(variant='AntCorridor-SR', eval=False)
-    eval_env_fn = lambda: AntMazeEnv(variant='AntCorridor-SR', eval=True)
+    env_fn = lambda: AntMazeEnv(variant='AntCorridor-SR', eval=False, max_step=args.env_max_step)
+    eval_env_fn = lambda: AntMazeEnv(variant='AntCorridor-SR', eval=True, max_step=args.env_max_step)
   elif 'antpush' in args.env.lower():
     env_fn = lambda: AntMazeEnv(variant='AntPush', eval=False)
     eval_env_fn = lambda: AntMazeEnv(variant='AntPush', eval=True)
@@ -63,8 +63,8 @@ def make_env(args):
     env_fn = lambda: AntMazeEnv(variant='AntFall', eval=False)
     eval_env_fn = lambda: AntMazeEnv(variant='AntFall', eval=True)
   elif 'humcorridor' in args.env.lower():
-    env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=False)
-    eval_env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=True)
+    env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=False, max_step=args.env_max_step)
+    eval_env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=True, max_step=args.env_max_step)
   elif ('pen_' in args.env.lower()) or ('block_' in args.env.lower()) or ('egg_' in args.env.lower()):
     # The environment name is of the form: {block,pen,egg}_{full,rotate-{z,parallel,xyz}}_{dist_thres}_{rot_thres}
     env_type, mode, dt, rt = args.env.split('_')
