@@ -5,6 +5,7 @@ from envs.customfetch.custom_hand import HandBlockEnv, HandPenEnv, HandEggEnv, H
 from envs.customfetch.epsilon_wrapper import EpsilonWrapper
 from envs.sibrivalry.toy_maze import PointMaze2D, SimpleMazeEnv, Navigation2d
 from envs.sibrivalry.ant_maze import AntMazeEnv
+from envs.sibrivalry.humanoid_maze import HumanoidMazeEnv
 from envs.goalgan.ant_maze import AntMazeEnv as GGAntMaze
 from envs.robotics.vanilla import VanillaGoalEnv
 from envs.robotics.fetch.push_labyrinth import FetchPushLabyrinthEnv
@@ -52,12 +53,18 @@ def make_env(args):
     else:
       env_fn = lambda: AntMazeEnv(variant='AntMaze-SR', eval=False)
       eval_env_fn = lambda: AntMazeEnv(variant='AntMaze-SR', eval=True)
+  elif 'antcorridor' in args.env.lower():
+    env_fn = lambda: AntMazeEnv(variant='AntCorridor-SR', eval=False)
+    eval_env_fn = lambda: AntMazeEnv(variant='AntCorridor-SR', eval=True)
   elif 'antpush' in args.env.lower():
     env_fn = lambda: AntMazeEnv(variant='AntPush', eval=False)
     eval_env_fn = lambda: AntMazeEnv(variant='AntPush', eval=True)
   elif 'antfall' in args.env.lower():
     env_fn = lambda: AntMazeEnv(variant='AntFall', eval=False)
     eval_env_fn = lambda: AntMazeEnv(variant='AntFall', eval=True)
+  elif 'humcorridor' in args.env.lower():
+    env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=False)
+    eval_env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=True)
   elif ('pen_' in args.env.lower()) or ('block_' in args.env.lower()) or ('egg_' in args.env.lower()):
     # The environment name is of the form: {block,pen,egg}_{full,rotate-{z,parallel,xyz}}_{dist_thres}_{rot_thres}
     env_type, mode, dt, rt = args.env.split('_')

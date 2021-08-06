@@ -73,13 +73,13 @@ def megae_config():
     config.replay_size = int(1e6)
     config.clip_target_range = (-50., 0.)
     config.action_noise = 0.1
-    config.eexplore = 0.
+    config.eexplore = 0.1
     config.go_eexplore = 0.
     config.go_reset_percent = 0.
     config.her = 'rfab_2_5_1_2'
     config.grad_value_clipping = 5.
     config.entropy_coef = 0.1
-    config.beta = 0.2
+    config.beta = 0.1
     config.clip_density = 20.
     config.clip_empowerment = 20.
     config.reward_scale = 0.1

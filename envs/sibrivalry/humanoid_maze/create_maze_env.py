@@ -13,11 +13,7 @@ def create_maze_env(env_name=None, top_down_view=False):
   if env_name.startswith('Ego'):
     n_bins = 8
     env_name = env_name[3:]
-  if env_name.startswith('Ant'):
-    cls = AntMazeEnv
-    env_name = env_name[3:]
-    maze_size_scaling = 8
-  elif env_name.startswith('Hum'):
+  if env_name.startswith('Hum'):
     cls = HumanoidMazeEnv
     env_name = env_name[3:]
     maze_size_scaling = 8

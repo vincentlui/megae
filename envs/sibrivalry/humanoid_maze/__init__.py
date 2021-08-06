@@ -3,29 +3,29 @@
 # SPDX-License-Identifier: MIT
 # For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
 
-from envs.sibrivalry.ant_maze.create_maze_env import create_maze_env
+from envs.sibrivalry.humanoid_maze.create_maze_env import create_maze_env
 
 import gym
 import numpy as np
 import torch
 from gym.utils import seeding
 
-class AntMazeEnv(gym.GoalEnv):
+class HumanoidMazeEnv(gym.GoalEnv):
   """Wraps the HIRO/SR Ant Environments in a gym goal env."""
-  def __init__(self, variant='AntMaze-SR', eval=False):
+  def __init__(self, variant='HumCorridor', eval=False):
 
     self.done_env = False
     if eval:
       self.dist_threshold = 5.0
     else:
       self.dist_threshold = np.sqrt(2)
-    state_dims = 30
+    state_dims = 48
     
     
     mazename = variant.split('-')
     if len(mazename) == 2:
       mazename, test_goals = mazename
-      if mazename == 'AntCorridor':
+      if mazename == 'HumCorridor':
         self.goal_dims = [0, 1]
         self.eval_dims = [0, 1]
         self.sample_goal = lambda: self.np_random.uniform([15.5, -3.5], [19.5, 3.5]).astype(np.float32)
@@ -33,7 +33,7 @@ class AntMazeEnv(gym.GoalEnv):
         if eval:
           self.done_env = True
       else:
-        assert mazename == 'AntMaze'
+        assert mazename == 'HumMaze'
         self.goal_dims = [0, 1]
         self.eval_dims = [0, 1]
         if test_goals == 'SR':
@@ -48,16 +48,8 @@ class AntMazeEnv(gym.GoalEnv):
       self.goal_dims = [0, 1, 3, 4]
       self.eval_dims = [0, 1, 2, 3]
       state_dims = 33
-      if mazename == 'AntPush':
-        self.sample_goal = lambda: np.array([0., 19., 2., 8.], dtype=np.float32)
-        if eval:
-          self.eval_dims = [0, 1]
-      elif mazename == 'AntFall':
-        self.sample_goal = lambda: np.array([0., 27., 8., 16.], dtype=np.float32)
-        if eval:
-          self.eval_dims = [0, 1]
-      else:
-        raise ValueError('Bad maze name!')
+
+      raise ValueError('Bad maze name!')
 
 
     self.maze = create_maze_env(mazename) # this returns a gym environment
