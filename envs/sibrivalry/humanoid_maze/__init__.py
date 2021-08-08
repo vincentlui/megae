@@ -33,6 +33,13 @@ class HumanoidMazeEnv(gym.GoalEnv):
         self.dist_threshold = 1.0
         if eval:
           self.done_env = True
+      elif mazename == 'HumCorridor3D':
+        self.goal_dims = [0, 1, 2]
+        self.eval_dims = [0, 1, 2]
+        self.sample_goal = lambda: self.np_random.uniform([15.5, -3.5, 1.0], [19.5, 3.5, 1.42]).astype(np.float32)
+        self.dist_threshold = 1.0
+        if eval:
+          self.done_env = True
       else:
         assert mazename == 'HumMaze'
         self.goal_dims = [0, 1]

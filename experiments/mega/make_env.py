@@ -65,6 +65,9 @@ def make_env(args):
   elif 'humcorridor' in args.env.lower():
     env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=False, max_step=args.env_max_step)
     eval_env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=True, max_step=args.env_max_step)
+  elif 'humcorridor3d' in args.env.lower():
+    env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor3D-SR', eval=False, max_step=args.env_max_step)
+    eval_env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor3D-SR', eval=True, max_step=args.env_max_step)
   elif ('pen_' in args.env.lower()) or ('block_' in args.env.lower()) or ('egg_' in args.env.lower()):
     # The environment name is of the form: {block,pen,egg}_{full,rotate-{z,parallel,xyz}}_{dist_thres}_{rot_thres}
     env_type, mode, dt, rt = args.env.split('_')
