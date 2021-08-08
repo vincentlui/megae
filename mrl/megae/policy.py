@@ -164,12 +164,12 @@ class StochasticActorPolicy(mrl.Module):
             action, _ = self.actor(state)
         action = self.numpy(action)
 
-        if self.training and not greedy and self.config.get('eexplore'):
-            eexplore = self.config.eexplore
-            if hasattr(self, 'ag_curiosity'):
-                eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
-            mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
-            randoms = np.random.random(action.shape) * (2 * action_scale) - action_scale
-            action = mask * randoms + (1 - mask) * action
+        # if self.training and not greedy and self.config.get('eexplore'):
+        #     eexplore = self.config.eexplore
+        #     if hasattr(self, 'ag_curiosity'):
+        #         eexplore = self.ag_curiosity.go_explore * self.config.go_eexplore + eexplore
+        #     mask = (np.random.random((action.shape[0], 1)) < eexplore).astype(np.float32)
+        #     randoms = np.random.random(action.shape) * (2 * action_scale) - action_scale
+        #     action = mask * randoms + (1 - mask) * action
 
         return np.clip(action, -action_scale, action_scale)

@@ -64,7 +64,7 @@ def megae_config():
     config.critic_lr = 1e-3
     config.actor_weight_decay = 0.
     config.action_l2_regularization = 1e-1
-    config.target_network_update_freq = 10
+    config.target_network_update_freq = 40
     config.target_network_update_frac = 0.05
     config.optimize_every = 4
     config.batch_size = 2000

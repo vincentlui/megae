@@ -90,17 +90,25 @@ class JSMI(Empowerment):
                 states_ags = np.concatenate([states, ags], axis=-1)
                 if hasattr(self, 'state_normalizer'):
                     states_ags = self.state_normalizer(states_ags, update=False).astype(np.float32)
-                states_contexts = np.concatenate([states, contexts], axis=-1)
-                if hasattr(self, 'state_normalizer_expl'):
-                    states_contexts = self.state_normalizer_expl(states_contexts, update=False).astype(np.float32)
+                # states_contexts = np.concatenate([states, contexts], axis=-1)
+                # if hasattr(self, 'state_normalizer_expl'):
+                #     states_contexts = self.state_normalizer_expl(states_contexts, update=False).astype(np.float32)
+                # states_ags = self.torch(states_ags)
+                # states_contexts = self.torch(states_contexts)
+                # actions = self.torch(actions)
+                # input = torch.cat([actions, states_ags], dim=-1)
+                # with torch.no_grad():
+                #     a_policy, _ = self.behavior_policy(states_contexts)
+                # input2 = torch.cat([a_policy, states_ags], dim=-1)
+                actions_shuffle = np.copy(actions)
+                np.random.shuffle(actions_shuffle)
                 states_ags = self.torch(states_ags)
-                states_contexts = self.torch(states_contexts)
                 actions = self.torch(actions)
-                input = torch.cat([actions, states_ags], dim=-1)
-                with torch.no_grad():
-                    a_policy, _ = self.behavior_policy(states_contexts)
-                input2 = torch.cat([a_policy, states_ags], dim=-1)
-                T1 = self.T(input)
+                input1 = torch.cat([actions, states_ags], dim=-1)
+                actions_shuffle = self.torch(actions_shuffle)
+                input2 = torch.cat([actions_shuffle, states_ags], dim=-1)
+
+                T1 = self.T(input1)
                 T2 = self.T(input2)
                 if self.config.clip_empowerment:
                     T1 = torch.clip(T1, -self.config.clip_empowerment, self.config.clip_empowerment)
