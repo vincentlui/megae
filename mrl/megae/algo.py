@@ -10,7 +10,7 @@ import os
 
 class OffPolicyActorCritic2(OffPolicyActorCritic):
     def __init__(self, algorithm_name, optimize_every=1, actor_name='actor', critic_name='critic', replay_buffer_name='replay_buffer',
-                 is_explore=False, clip_target_range=None):
+                 is_explore=False, clip_target_range=None, target_network_update_freq=1, target_network_update_frac=0.005):
         mrl.Module.__init__(
         self,
         algorithm_name,
@@ -23,6 +23,8 @@ class OffPolicyActorCritic2(OffPolicyActorCritic):
         self.replay_buffer_name = replay_buffer_name
         self.is_explore = is_explore
         self.clip_target_range = clip_target_range
+        self.target_network_update_freq = target_network_update_freq
+        self.target_network_update_frac = target_network_update_frac
 
     def _setup(self):
         """Sets up actor/critic optimizers and creates target network modules"""
@@ -92,9 +94,9 @@ class OffPolicyActorCritic2(OffPolicyActorCritic):
 
                 self.optimize_from_batch(states, actions, rewards, next_states, gammas)
 
-                if self.config.opt_steps % self.config.target_network_update_freq == 0:
+                if self.config.opt_steps % self.target_network_update_freq == 0:
                     for target_model, model in self.targets_and_models:
-                        soft_update(target_model, model, self.config.target_network_update_frac)
+                        soft_update(target_model, model, self.target_network_update_frac)
 
 
 class DDPG2(OffPolicyActorCritic2):

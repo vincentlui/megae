@@ -159,9 +159,15 @@ def main(args, config):
   config.action_noise = ContinuousActionNoise(noise_type, std=ConstantSchedule(args.action_noise))
 
   if args.alg.lower() == 'ddpg': 
-    config.algorithm1 = DDPG2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic', clip_target_range=config.clip_target_range)
+    config.algorithm1 = DDPG2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic',
+                              clip_target_range=config.clip_target_range,
+                              target_network_update_freq=config.target_network_update_freq,
+                              target_network_update_frac=config.target_network_update_frac)
   elif args.alg.lower() == 'sac':
-    config.algorithm1 = SAC2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic', clip_target_range=config.clip_target_range)
+    config.algorithm1 = SAC2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic',
+                             clip_target_range=config.clip_target_range,
+                             target_network_update_freq=config.target_network_update_freq,
+                             target_network_update_frac=config.target_network_update_frac)
   else:
     raise NotImplementedError
 
@@ -174,10 +180,14 @@ def main(args, config):
   #     clip_target_range_expl = (-sum, sum)
   if args.alg_expl.lower() == 'ddpg':
     config.algorithm2 = DDPG2('algorithm2', optimize_every=1, actor_name='expl_actor', critic_name='expl_critic',
-                              is_explore=True, clip_target_range=clip_target_range_expl)
+                              is_explore=True, clip_target_range=clip_target_range_expl,
+                              target_network_update_freq=config.target_network_update_freq_expl,
+                              target_network_update_frac=config.target_network_update_frac_expl)
   elif args.alg_expl.lower() == 'sac':
     config.algorithm2 = SAC2('algorithm2', optimize_every=1, actor_name='expl_actor', critic_name='expl_critic',
-                             is_explore=True, clip_target_range=clip_target_range_expl)
+                             is_explore=True, clip_target_range=clip_target_range_expl,
+                             target_network_update_freq=config.target_network_update_freq_expl,
+                             target_network_update_frac=config.target_network_update_frac_expl)
   else:
     raise NotImplementedError
 
