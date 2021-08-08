@@ -368,7 +368,7 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       flattened_context_states = context_states.reshape(num_envs * self.num_context, -1).astype(np.float32)
       density_context_states = np.exp(density_module.evaluate_log_density(flattened_context_states)\
           .reshape(num_envs, self.num_context))
-      density_context_states_normalized = density_context_states
+      density_context_states_normalized = density_context_states / np.linalg.norm(density_context_states)
       return density_context_states_normalized
 
 
