@@ -82,7 +82,7 @@ def megae_config():
     config.grad_value_clipping = 5.
     config.entropy_coef = 0.1
     config.beta = 0.1
-    config.clip_density = 20.
+    config.clip_density = 1000.
     config.clip_empowerment = 20.
     config.reward_scale = 0.1
     config.emp_lr = 1e-2
@@ -91,16 +91,9 @@ def megae_config():
 
 def fetchconfig():
   config = megae_config()
-  config.batch_size = 1000
-  config.eexplore = 0.2
-  config.action_noise = 0.1
-  config.grad_value_clipping = -1
+  config.eexplore = 0.
   config.her = 'rfab_2_5_1_2'
-  config.replay_size = int(2.5e6)
-  config.initial_explore = 10000
-  config.warm_up = 5000
-  config.action_l2_regularization = 1e-2
-  config.optimize_every = 2
+  config.optimize_every = 4
   config.target_network_update_freq = 10
   config.activ = 'relu'
   return config

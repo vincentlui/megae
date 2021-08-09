@@ -334,6 +334,9 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       sampled_ag_scores -= interest_module.evaluate_log_interest(flattened_sampled_ags)  # add in log interest
     sampled_ag_scores = sampled_ag_scores.reshape(num_envs, num_sampled_ags)  # these are log densities
 
+    if self.config.get('clip_density'):
+        sampled_ag_scores = np.clip(sampled_ag_scores, -self.config.clip_density, self.config.clip_density)
+
     # Take softmax of the alpha * log density.
     # If alpha = -1, this gives us normalized inverse densities (higher is rarer)
     # If alpha < -1, this skews the density to give us low density samples
@@ -349,7 +352,7 @@ class DensityMegaeCuriosity(MegaeCuriosity):
           # density_module._optimize(force=True)
         return np.zeros(ag.shape[0])
       states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
-      if self.config.clip_density:
+      if self.config.get('clip_density'):
         states_score = np.clip(states_score, -self.config.clip_density, self.config.clip_density)
 
       return states_score
