@@ -24,7 +24,7 @@ def create_maze_env(env_name=None, top_down_view=False):
   put_spin_near_agent = False
   if env_name == 'Maze':
     maze_id = 'Maze'
-  elif env_name == 'Corridor':
+  elif 'corridor' in env_name.lower():
     maze_id = 'Corridor'
   elif env_name == 'Push':
     maze_id = 'Push'

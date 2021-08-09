@@ -62,7 +62,7 @@ def make_env(args):
   elif 'antfall' in args.env.lower():
     env_fn = lambda: AntMazeEnv(variant='AntFall', eval=False)
     eval_env_fn = lambda: AntMazeEnv(variant='AntFall', eval=True)
-  elif 'humcorridor' in args.env.lower():
+  elif 'humcorridor2d' in args.env.lower():
     env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=False, max_step=args.env_max_step)
     eval_env_fn = lambda: HumanoidMazeEnv(variant='HumCorridor-SR', eval=True, max_step=args.env_max_step)
   elif 'humcorridor3d' in args.env.lower():
