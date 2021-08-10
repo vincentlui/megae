@@ -29,7 +29,8 @@ class MegaeCuriosity(mrl.Module):
     """
 
     def __init__(self, num_sampled_ags=500, max_steps=50, keep_dg_percent=-1e-1, randomize=False, use_qcutoff=True,
-                 exploration_percent=0.8, num_context=10, context_var=0.1, context_dist='normal', initial_explore_percent=0.05):
+                 exploration_percent=0.8, num_context=10, context_var=0.1, context_dist='normal',
+                 initial_explore_percent=0.05, intermediate_goal_exploration=False):
         super().__init__('ag_curiosity',
                          required_agent_modules=['env', 'replay_buffer', 'actor', 'critic'],
                          locals=locals())
@@ -43,6 +44,7 @@ class MegaeCuriosity(mrl.Module):
         self.context_var = context_var
         self.context_dist = context_dist
         self.initial_explore_percent = initial_explore_percent
+        self.intermediate_goal_exploration = intermediate_goal_exploration
 
     def _setup(self):
         assert isinstance(self.replay_buffer, OnlineHERBuffer)
@@ -50,6 +52,7 @@ class MegaeCuriosity(mrl.Module):
 
         self.n_envs = self.env.num_envs
         self.current_goals = None
+        self.intermediate_goals = None
         self.replaced_goal = np.zeros((self.env.num_envs,))
 
         # setup cutoff
@@ -66,13 +69,15 @@ class MegaeCuriosity(mrl.Module):
         self.is_success = np.zeros((self.n_envs, 1), dtype=np.float32)
         self.successes_deque = deque(maxlen=10)  # for dynamic cutoff
         self.successes = []
+        self.ag_from = np.zeros((self.n_envs, self.env.goal_dim), dtype=np.float32)
+        self.intermediate_reached = np.full((self.n_envs, ), False)
 
         # context
         self.context_states = self._generate_context_states(self.num_context, self.context_var)
 
         # number of environment steps
         self.num_steps = np.zeros((self.n_envs, 1), dtype=np.float32)
-        self.is_explore = np.zeros((self.n_envs,1), dtype=np.float32)
+        self.is_explore = np.zeros((self.n_envs,1), dtype=np.bool)
 
     def _manage_resets_and_success_behaviors(self, experience, close):
         """ Manage (1) end of trajectory, (2) early resets, (3) go explore and overshot goals """
@@ -86,19 +91,15 @@ class MegaeCuriosity(mrl.Module):
                     reset_idxs.append(i)
 
             if not over and close[i]:  # if not over and success, modify go_explore; maybe overshoot goal?
-                self.is_success[i] += 1.
-                self.go_explore[i] += 1.
+                if self.intermediate_goal_exploration and not self.intermediate_reached[i]:
+                    self.intermediate_reached[i] = True
+                else:
+                    self.is_success[i] += 1.
+                    self.go_explore[i] += 1.
 
-                if not self.config.get('never_done') and np.random.random() < self.config.overshoot_goal_percent:
-                    step_amount = experience.next_state['achieved_goal'][i] - experience.state['achieved_goal'][i]
-                    overshooting_idxs.append(i)
-                    overshooting_proposals.append(
-                        generate_overshooting_goals(self.num_sampled_ags, step_amount, self.config.direct_overshoots,
-                                                    self.current_goals[i]))
-
-                      # and (self.num_steps[i] >= self.explortation_start_steps
-                if self.is_explore[i] < 0.5 and ( np.random.random() < self.is_success[i] * 5./self.max_steps): #self.num_steps[i] >= self.explortation_start_steps or
-                    self.is_explore[i] = 1.
+                    if not self.is_explore[i] and ( np.random.random() < self.is_success[i] * 5./self.max_steps): #self.num_steps[i] >= self.explortation_start_steps or
+                        self.is_explore[i] = True
+                        self.ag_from[i] = experience.next_state['achieved_goal'][i]
 
         return reset_idxs, overshooting_idxs, np.array(overshooting_proposals)
 
@@ -134,12 +135,21 @@ class MegaeCuriosity(mrl.Module):
     def _process_experience(self, experience):
         """Curiosity module updates the desired goal depending on experience.trajectory_over"""
         ag_buffer = self.replay_buffer.buffer.BUFF.buffer_ag
+        is_explore_buffer = self.replay_buffer.buffer.BUFF.buffer_is_explore
+        ig_buffer = self.replay_buffer.buffer.BUFF.buffer_ig
+
         self.num_steps += 1.
 
         if self.current_goals is None:
             self.current_goals = experience.reset_state['desired_goal']
 
-        computed_reward = self.env.compute_reward(experience.next_state['achieved_goal'], self.current_goals,
+        goals = self.current_goals.copy()
+        if self.intermediate_goal_exploration:
+            if self.intermediate_goals is None:
+                self.intermediate_goals = self.current_goals
+            goals[~self.intermediate_reached] = self.intermediate_goals[~self.intermediate_reached]
+
+        computed_reward = self.env.compute_reward(experience.next_state['achieved_goal'], goals,
                                                   {'s': experience.state['observation'],
                                                    'ns': experience.next_state['observation']})
         close = computed_reward > -0.5
@@ -158,8 +168,9 @@ class MegaeCuriosity(mrl.Module):
         if np.any(experience.trajectory_over) and len(ag_buffer):
             # sample some achieved goals
             sample_idxs = np.random.randint(len(ag_buffer), size=self.num_sampled_ags * self.n_envs)
-            sampled_ags = ag_buffer.get_batch(sample_idxs)
-            sampled_ags = sampled_ags.reshape(self.n_envs, self.num_sampled_ags, -1)
+            sampled_ags = ag_buffer.get_batch(sample_idxs).reshape(self.n_envs, self.num_sampled_ags, -1)
+            sampled_is_explore = is_explore_buffer.get_batch(sample_idxs).reshape(self.n_envs, self.num_sampled_ags, -1)
+            sampled_ig = ig_buffer.get_batch(sample_idxs).reshape(self.n_envs, self.num_sampled_ags, -1)
 
             # compute the q-values of both the sampled achieved goals and the current goals
             states = np.tile(experience.reset_state['observation'][:, None, :], (1, self.num_sampled_ags, 1))
@@ -214,6 +225,8 @@ class MegaeCuriosity(mrl.Module):
             if q_values is not None:
                 chosen_q_val = (chosen_idx * q_values).sum(axis=1, keepdims=True)
             chosen_ags = np.sum(sampled_ags * chosen_idx[:, :, None], axis=1)  # n_envs x goal_feats
+            chosen_is_explore = np.sum(sampled_is_explore * chosen_idx[:, :, None], axis=1)  # n_envs x goal_feats
+            chosen_igs = np.sum(sampled_ig * chosen_idx[:, :, None], axis=1)  # n_envs x goal_feats
 
             # replace goal always when first_visit_succ (relying on the dg_score_multiplier to dg focus), otherwise
             # we are going to transition into the dgs using the ag_kde_tophat
@@ -231,6 +244,9 @@ class MegaeCuriosity(mrl.Module):
             replace_goal *= (np.random.uniform(size=[self.n_envs, 1]) > self.keep_dg_percent).astype(np.float32)
 
             new_goals = replace_goal * chosen_ags + (1 - replace_goal) * self.current_goals
+            new_igs = None
+            if self.intermediate_goal_exploration:
+                new_igs = replace_goal * chosen_igs + (1 - replace_goal) * self.intermediate_goals
 
             if hasattr(self, 'logger') and len(self.successes) > 50:
                 if q_values is not None:
@@ -251,8 +267,11 @@ class MegaeCuriosity(mrl.Module):
                         self.replaced_goal[i] = 1.
                     self.go_explore[i] = 0.
                     self.is_success[i] = 0.
-                    self.is_explore[i] = float(np.random.uniform() < self.initial_explore_percent)
+                    self.is_explore[i] = np.random.uniform() < self.initial_explore_percent
                     self.num_steps[i] = 0.
+                    self.intermediate_reached[i] = False
+                    self.intermediate_goals = new_igs
+                    self.ag_from = np.zeros_like(self.ag_from)
 
     def _generate_context_states(self, num_context, context_var):
         goal_dim = self.env.goal_dim
@@ -275,10 +294,14 @@ class MegaeCuriosity(mrl.Module):
         if self.current_goals is None:
             return state
 
+        desired_goal = self.current_goals.copy()
+        if self.intermediate_goal_exploration:
+            desired_goal[~self.intermediate_reached] = self.intermediate_goals[~self.intermediate_reached]
+
         return {
             'observation': state['observation'],
             'achieved_goal': state['achieved_goal'],
-            'desired_goal': self.current_goals
+            'desired_goal': desired_goal
         }
 
     def score_goals(self, sampled_ags, info):
@@ -311,6 +334,19 @@ class DensityMegaeCuriosity(MegaeCuriosity):
   def _setup(self):
     assert hasattr(self, self.density_module)
     super()._setup()
+
+  def relabel_state(self, state):
+    """Should be called by the policy module to relabel states with intrinsic goals"""
+    if self.current_goals is None:
+        return state
+
+    desired_goal = self.current_goals
+
+    return {
+        'observation': state['observation'],
+        'achieved_goal': state['achieved_goal'],
+        'desired_goal': self.current_goals
+    }
 
   def score_goals(self, sampled_ags, info):
     """ Lower is better """
@@ -532,7 +568,7 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
                       self.replaced_goal[i] = 1.
                   self.go_explore[i] = 0.
                   self.is_success[i] = 0.
-                  self.is_explore[i] = float(np.random.uniform() < self.initial_explore_percent)
+                  self.is_explore[i] = np.random.uniform() < self.initial_explore_percent
                   self.num_steps[i] = 0.
 
   def score_goals_density(self, sampled_ags, info):

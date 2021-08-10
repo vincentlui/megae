@@ -99,7 +99,8 @@ def main(args, config):
                                                   num_context=args.num_context,
                                                   context_var=args.var_context,
                                                   context_dist=args.context_dist,
-                                                  initial_explore_percent=args.init_explore_percent
+                                                  initial_explore_percent=args.init_explore_percent,
+                                                  intermediate_goal_exploration=args.intermediate_goal_exploration,
                                                   )
     elif args.ag_curiosity == 'megaerandkde':
       config.ag_curiosity = DensityMegaeCuriosity(max_steps=args.env_max_step,
@@ -414,7 +415,7 @@ if __name__ == '__main__':
   parser.add_argument('--no_cutoff', action='store_true', help="don't use the q cutoff for curiosity")
   parser.add_argument('--visualize_trained_agent', action='store_true', help="visualize the trained agent")
   parser.add_argument('--intrinsic_visualization', action='store_true', help="if visualized agent should act intrinsically; requires saved replay buffer!")
-  parser.add_argument('--keep_dg_percent', default=-1e-1, type=float, help='Percentage of time to keep desired goals')
+  parser.add_argument('--keep_dg_percent', default=-0, type=float, help='Percentage of time to keep desired goals')
   parser.add_argument('--prioritized_mode', default='none', type=str, help='Modes for prioritized replay: none, mep (default: none)')
   parser.add_argument('--no_ag_kde', action='store_true', help="don't track ag kde")
 
@@ -426,6 +427,7 @@ if __name__ == '__main__':
   parser.add_argument('--init_explore_percent', default=0., type=float, help='percentage of pure exploration at start')
   parser.add_argument('--use_empowerment', action='store_true', help='Include empowerment as intrinsic reward')
   parser.add_argument('--density_percent', default='0.', type=float, help='percentage of goals using density objective')
+  parser.add_argument('--intermediate_goal_exploration', action='store_true', help='Visit intermediate goals')
 
   parser = add_config_args(parser, config)
   args = parser.parse_args()

@@ -42,19 +42,22 @@ class ExplorationActorPolicy(mrl.Module):
             action_dim = self.env.action_dim
             action = np.empty((num_env, action_dim))
 
-            is_explore_index = np.nonzero(is_explore)[0]
-            goal_index = np.nonzero(is_explore==0)[0]
-            if len(is_explore_index) > 0:
-                if isinstance(state, dict):
-                    obs = state['observation']
-                    s = np.concatenate((obs[is_explore_index], context[is_explore_index]), -1)
-                else:
-                    s = np.concatenate((state[is_explore_index], context[is_explore_index]), -1)
+            is_explore_index = is_explore #np.nonzero(is_explore)[0]
+            goal_index = ~is_explore #np.nonzero(is_explore==0)[0]
+            # if len(is_explore_index) > 0:
+            if isinstance(state, dict):
+                obs = state['observation']
+                s = np.concatenate((obs[is_explore_index.flatten()], context[is_explore_index.flatten()]), -1)
+            else:
+                s = np.concatenate((state[is_explore_index.flatten()], context[is_explore_index.flatten()]), -1)
+            if len(s):
                 a_expl = self.directed_exploration(s, greedy)
-                action[is_explore_index] = a_expl
-            if len(goal_index) > 0:
-                a_goal = self.goal_conditioned_policy(s_flatten[goal_index], greedy)
-                action[goal_index] = a_goal
+                action[is_explore_index.flatten()] = a_expl
+            # if len(goal_index) > 0:
+            s = s_flatten[goal_index.flatten()]
+            if len(s):
+                a_goal = self.goal_conditioned_policy(s_flatten[goal_index.flatten()], greedy)
+                action[goal_index.flatten()] = a_goal
         else:
             action = self.goal_conditioned_policy(s_flatten, greedy)
 
