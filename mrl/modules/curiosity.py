@@ -329,7 +329,7 @@ class DensityAchievedGoalCuriosity(AchievedGoalCuriosity):
     # Take softmax of the alpha * log density.
     # If alpha = -1, this gives us normalized inverse densities (higher is rarer)
     # If alpha < -1, this skews the density to give us low density samples
-    normalized_inverse_densities = softmax(sampled_ag_scores * self.alpha)
+    normalized_inverse_densities = softmax(sampled_ag_scores * self.alpha, axis=-1)
     normalized_inverse_densities *= -1.  # make negative / reverse order so that lower is better.
 
     return normalized_inverse_densities

@@ -301,7 +301,8 @@ class MegaeCuriosity(mrl.Module):
         return {
             'observation': state['observation'],
             'achieved_goal': state['achieved_goal'],
-            'desired_goal': desired_goal
+            'desired_goal': desired_goal,
+            'behavioral_goal': self.current_goals,
         }
 
     def score_goals(self, sampled_ags, info):
@@ -376,7 +377,7 @@ class DensityMegaeCuriosity(MegaeCuriosity):
     # Take softmax of the alpha * log density.
     # If alpha = -1, this gives us normalized inverse densities (higher is rarer)
     # If alpha < -1, this skews the density to give us low density samples
-    normalized_inverse_densities = softmax(sampled_ag_scores * self.alpha)
+    normalized_inverse_densities = softmax(sampled_ag_scores * self.alpha, axis=-1)
     normalized_inverse_densities *= -1.  # make negative / reverse order so that lower is better.
 
     return normalized_inverse_densities
@@ -406,7 +407,7 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       context_states = ag_tile + self.context_states
       flattened_context_states = context_states.reshape(num_envs * self.num_context, -1).astype(np.float32)
       density_context_states = softmax(density_module.evaluate_log_density(flattened_context_states)\
-          .reshape(num_envs, self.num_context))
+          .reshape(num_envs, self.num_context), axis=-1)
       density_context_states_normalized = density_context_states #/ np.linalg.norm(density_context_states)
       return density_context_states_normalized
 

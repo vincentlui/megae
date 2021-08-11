@@ -95,7 +95,7 @@ def fetchconfig():
   config.her = 'rfab_2_5_1_2'
   config.optimize_every = 4
   config.target_network_update_freq = 10
-  config.activ = 'relu'
+  config.activ = 'gelu'
   return config
 
 
