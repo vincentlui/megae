@@ -62,10 +62,14 @@ def megae_config():
     config.gamma_expl = 0.98
     config.actor_lr = 1e-3
     config.critic_lr = 1e-3
-    config.actor_weight_decay = 0.
+
+    config.actor_weight_decay = 0.1
+    config.critic_weight_decay = 0.3
+    config.actor_weight_decay_expl = 0.1
+    config.critic_weight_decay_expl = 0.1
     config.action_l2_regularization = 1e-1
     config.action_l2_regularization_expl = 1e-1
-    config.target_network_update_freq = 40
+    config.target_network_update_freq = 10
     config.target_network_update_freq_expl = 1
     config.target_network_update_frac = 0.05
     config.target_network_update_frac_expl = 0.005
@@ -76,7 +80,7 @@ def megae_config():
     config.replay_size = int(1e6)
     config.clip_target_range = (-50., 0.)
     config.action_noise = 0.1
-    config.eexplore = 0.1
+    config.eexplore = 0.01
     config.go_eexplore = 0.
     config.go_reset_percent = 0.
     config.her = 'rfab_2_5_1_2'
@@ -92,11 +96,10 @@ def megae_config():
 
 def fetchconfig():
   config = megae_config()
-  config.eexplore = 0.
+  config.eexplore = 0.01
   config.her = 'rfab_2_5_1_2'
   config.optimize_every = 4
   config.target_network_update_freq = 10
-  config.activ = 'gelu'
   return config
 
 
