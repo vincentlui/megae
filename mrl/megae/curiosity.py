@@ -177,6 +177,8 @@ class MegaeCuriosity(mrl.Module):
             states = np.concatenate((states, sampled_ags), -1).reshape(self.num_sampled_ags * self.n_envs, -1)
             states_curr = np.concatenate((experience.reset_state['observation'], self.current_goals), -1)
             states_cat = np.concatenate((states, states_curr), 0)
+            if hasattr(self, 'state_normalizer'):
+                states_cat = self.state_normalizer(states_cat, update=False).astype(np.float32)
 
             bad_q_idxs, q_values = [], None
             if self.use_qcutoff:
@@ -463,7 +465,7 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
           # sample some achieved goals
           if num_exploration:
               s, _, _, _, _, _, _, \
-              _, _, previous_ags, ags, _, _ = self.replay_buffer.buffer.sample(self.num_sampled_ags * num_exploration)
+              _, _, previous_ags, ags, _, _, _ = self.replay_buffer.buffer.sample(self.num_sampled_ags * num_exploration)
               s_explore = np.concatenate([s, self.get_context({'achieved_goal': ags})], axis=-1)
               if hasattr(self, 'state_normalizer_expl'):
                   s_explore = self.state_normalizer_expl(s_explore, update=False).astype(np.float32)
@@ -484,6 +486,8 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
           states = np.concatenate((states, sampled_ags), -1).reshape(self.num_sampled_ags * self.n_envs, -1)
           states_curr = np.concatenate((experience.reset_state['observation'], self.current_goals), -1)
           states_cat = np.concatenate((states, states_curr), 0)
+          if hasattr(self, 'state_normalizer'):
+              states_cat = self.state_normalizer(states_cat, update=False).astype(np.float32)
 
           bad_q_idxs, q_values = [], None
           if self.use_qcutoff:
@@ -597,7 +601,7 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
     # Take softmax of the alpha * log density.
     # If alpha = -1, this gives us normalized inverse densities (higher is rarer)
     # If alpha < -1, this skews the density to give us low density samples
-    normalized_inverse_densities = np.exp(sampled_ag_scores * self.alpha)
+    normalized_inverse_densities = softmax(sampled_ag_scores * self.alpha, axis=-1)
     normalized_inverse_densities *= -1.  # make negative / reverse order so that lower is better.
 
     return normalized_inverse_densities
@@ -654,9 +658,13 @@ class DensityAndExplorationMegaeCuriosity(MegaeCuriosity):
 
   def _compute_q_expl(self, numpy_states):
       states = self.torch(numpy_states)
+      training = self.training
+      self.eval_mode()
       with torch.no_grad():
           max_actions = self.expl_actor(states)
           if isinstance(max_actions, tuple):
               max_actions = max_actions[0]
           q_value = torch.min(self.expl_critic(states, max_actions), self.expl_critic2(states, max_actions))
+      if training:
+          self.train_mode()
       return self.numpy(q_value)

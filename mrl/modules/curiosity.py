@@ -143,6 +143,8 @@ class AchievedGoalCuriosity(mrl.Module):
       states = np.concatenate((states, sampled_ags), -1).reshape(self.num_sampled_ags * self.n_envs, -1)
       states_curr = np.concatenate((experience.reset_state['observation'], self.current_goals), -1)
       states_cat = np.concatenate((states, states_curr), 0)
+      if hasattr(self, 'state_normalizer'):
+        states_cat = self.state_normalizer(states_cat, update=False).astype(np.float32)
 
       bad_q_idxs, q_values = [], None
       if self.use_qcutoff:

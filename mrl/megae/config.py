@@ -64,6 +64,7 @@ def megae_config():
     config.critic_lr = 1e-3
     config.actor_weight_decay = 0.
     config.action_l2_regularization = 1e-1
+    config.action_l2_regularization_expl = 1e-1
     config.target_network_update_freq = 40
     config.target_network_update_freq_expl = 1
     config.target_network_update_frac = 0.05
@@ -121,23 +122,28 @@ def antconfig():
 def testconfig():
     config = megae_config()
     config.gamma = 0.98
+    config.gamma_expl = 0.98
     config.actor_lr = 1e-3
     config.critic_lr = 1e-3
-    config.actor_weight_decay = 0.
+    config.actor_weight_decay = 0.1
+    config.critic_weight_decay = 0.3
+    config.actor_weight_decay_expl = 0.1
+    config.critic_weight_decay_expl = 0.1
     config.action_l2_regularization = 1e-1
-    config.target_network_update_freq = 40
+    config.action_l2_regularization_expl = 1e-1
+    config.target_network_update_freq = 10
     config.target_network_update_frac = 0.05
     config.optimize_every = 2
     config.batch_size = 128
     config.warm_up = 100
     config.initial_explore = 100
-    config.replay_size = int(1e6)
-    config.clip_target_range = (-50.,0.)
+    config.replay_size = int(1e5)
     config.action_noise = 0.1
-    config.eexplore = 0.
+    config.eexplore = 0.01
     config.go_eexplore = 0.
     config.go_reset_percent = 0.
     config.her = 'rfab_2_5_1_2'
     config.grad_value_clipping = 5.
     config.entropy_coef = 0.1
+    config.layers = (64, 64)
     return config

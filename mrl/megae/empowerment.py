@@ -85,7 +85,7 @@ class JSMI(Empowerment):
         if len(self.replay_buffer) > self.config.warm_up:
             self.step += 1
             if self.step % self.optimize_every == 0:
-                states, actions, rewards, next_states, dones, contexts, next_contexts, reward_expls, _, previous_ags, ags, goals, _ = \
+                states, actions, rewards, next_states, dones, contexts, next_contexts, reward_expls, _, previous_ags, ags, goals, *_ = \
                     self.replay_buffer.buffer.sample(self.config.batch_size)
                 states_ags = np.concatenate([states, ags], axis=-1)
                 if hasattr(self, 'state_normalizer'):

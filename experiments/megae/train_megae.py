@@ -159,36 +159,38 @@ def main(args, config):
   if args.noise_type.lower() == 'ou': noise_type = OrnsteinUhlenbeckProcess
   config.action_noise = ContinuousActionNoise(noise_type, std=ConstantSchedule(args.action_noise))
 
+  algorithm1_kwargs = {
+      'clip_target_range': config.clip_target_range,
+      'target_network_update_freq': config.target_network_update_freq,
+      'target_network_update_frac': config.target_network_update_frac,
+      'action_l2_regularization': config.action_l2_regularization,
+      'actor_weight_decay': config.actor_weight_decay,
+      'critic_weight_decay': config.critic_weight_decay
+  }
   if args.alg.lower() == 'ddpg': 
     config.algorithm1 = DDPG2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic',
-                              clip_target_range=config.clip_target_range,
-                              target_network_update_freq=config.target_network_update_freq,
-                              target_network_update_frac=config.target_network_update_frac)
+                              **algorithm1_kwargs)
   elif args.alg.lower() == 'sac':
     config.algorithm1 = SAC2('algorithm1', optimize_every=1, actor_name='actor', critic_name='critic',
-                             clip_target_range=config.clip_target_range,
-                             target_network_update_freq=config.target_network_update_freq,
-                             target_network_update_frac=config.target_network_update_frac)
+                             **algorithm1_kwargs)
   else:
     raise NotImplementedError
 
   clip_target_range_expl = (-np.inf, np.inf)
-  # if config.get('clip_density') or config.get('clip_empowerment'):
-  #   max_reward = config.clip_density + config.clip_empowerment
-  #   gamma = config.gamma_expl if config.get('gamma_expl') else config.gamma
-  #   if config.gamma < 1.:
-  #     sum = np.round(max_reward / (1 - gamma), 2)
-  #     clip_target_range_expl = (-sum, sum)
+  algorithm2_kwargs = {
+      'clip_target_range': clip_target_range_expl,
+      'target_network_update_freq': config.target_network_update_freq_expl,
+      'target_network_update_frac': config.target_network_update_frac_expl,
+      'action_l2_regularization': config.action_l2_regularization_expl,
+      'actor_weight_decay': config.actor_weight_decay_expl,
+      'critic_weight_decay': config.critic_weight_decay_expl
+  }
   if args.alg_expl.lower() == 'ddpg':
     config.algorithm2 = DDPG2('algorithm2', optimize_every=1, actor_name='expl_actor', critic_name='expl_critic',
-                              is_explore=True, clip_target_range=clip_target_range_expl,
-                              target_network_update_freq=config.target_network_update_freq_expl,
-                              target_network_update_frac=config.target_network_update_frac_expl)
+                              is_explore=True, **algorithm2_kwargs)
   elif args.alg_expl.lower() == 'sac':
     config.algorithm2 = SAC2('algorithm2', optimize_every=1, actor_name='expl_actor', critic_name='expl_critic',
-                             is_explore=True, clip_target_range=clip_target_range_expl,
-                             target_network_update_freq=config.target_network_update_freq_expl,
-                             target_network_update_frac=config.target_network_update_frac_expl)
+                             is_explore=True, **algorithm2_kwargs)
   else:
     raise NotImplementedError
 
@@ -415,7 +417,7 @@ if __name__ == '__main__':
   parser.add_argument('--no_cutoff', action='store_true', help="don't use the q cutoff for curiosity")
   parser.add_argument('--visualize_trained_agent', action='store_true', help="visualize the trained agent")
   parser.add_argument('--intrinsic_visualization', action='store_true', help="if visualized agent should act intrinsically; requires saved replay buffer!")
-  parser.add_argument('--keep_dg_percent', default=-0, type=float, help='Percentage of time to keep desired goals')
+  parser.add_argument('--keep_dg_percent', default=-0.1, type=float, help='Percentage of time to keep desired goals')
   parser.add_argument('--prioritized_mode', default='none', type=str, help='Modes for prioritized replay: none, mep (default: none)')
   parser.add_argument('--no_ag_kde', action='store_true', help="don't track ag kde")
 

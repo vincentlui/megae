@@ -10,7 +10,7 @@ import os
 
 class OffPolicyActorCritic2(OffPolicyActorCritic):
     def __init__(self, algorithm_name, optimize_every=1, actor_name='actor', critic_name='critic', replay_buffer_name='replay_buffer',
-                 is_explore=False, clip_target_range=None, target_network_update_freq=1, target_network_update_frac=0.005):
+                 is_explore=False, **kwargs):
         mrl.Module.__init__(
         self,
         algorithm_name,
@@ -22,9 +22,13 @@ class OffPolicyActorCritic2(OffPolicyActorCritic):
         self.critic_name = critic_name
         self.replay_buffer_name = replay_buffer_name
         self.is_explore = is_explore
-        self.clip_target_range = clip_target_range
-        self.target_network_update_freq = target_network_update_freq
-        self.target_network_update_frac = target_network_update_frac
+        self.clip_target_range = kwargs['clip_target_range']
+        self.target_network_update_freq = kwargs['target_network_update_freq']
+        self.target_network_update_frac = kwargs['target_network_update_frac']
+        self.action_l2_regularization = kwargs['action_l2_regularization']
+        self.actor_weight_decay = kwargs['actor_weight_decay']
+        self.critic_weight_decay = kwargs['critic_weight_decay']
+        self.kwargs = kwargs
 
     def _setup(self):
         """Sets up actor/critic optimizers and creates target network modules"""
@@ -50,7 +54,7 @@ class OffPolicyActorCritic2(OffPolicyActorCritic):
         self.actor_opt = torch.optim.Adam(
             actor_params,
             lr=self.config.actor_lr,
-            weight_decay=self.config.actor_weight_decay)
+            weight_decay=self.actor_weight_decay)
 
         self.actor_params = actor_params
 
@@ -73,7 +77,7 @@ class OffPolicyActorCritic2(OffPolicyActorCritic):
         self.critic_opt = torch.optim.Adam(
             critic_params,
             lr=self.config.critic_lr,
-            weight_decay=self.config.critic_weight_decay)
+            weight_decay=self.critic_weight_decay)
 
         self.critic_params = critic_params
 
