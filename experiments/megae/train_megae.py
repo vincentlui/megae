@@ -417,7 +417,7 @@ if __name__ == '__main__':
   parser.add_argument('--no_cutoff', action='store_true', help="don't use the q cutoff for curiosity")
   parser.add_argument('--visualize_trained_agent', action='store_true', help="visualize the trained agent")
   parser.add_argument('--intrinsic_visualization', action='store_true', help="if visualized agent should act intrinsically; requires saved replay buffer!")
-  parser.add_argument('--keep_dg_percent', default=-0.1, type=float, help='Percentage of time to keep desired goals')
+  parser.add_argument('--keep_dg_percent', default=0, type=float, help='Percentage of time to keep desired goals')
   parser.add_argument('--prioritized_mode', default='none', type=str, help='Modes for prioritized replay: none, mep (default: none)')
   parser.add_argument('--no_ag_kde', action='store_true', help="don't track ag kde")
 
