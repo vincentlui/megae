@@ -389,7 +389,7 @@ class DensityMegaeCuriosity(MegaeCuriosity):
       density_module = getattr(self, self.density_module)
       if not density_module.ready:
           # density_module._optimize(force=True)
-        return np.zeros(ag.shape[0])
+        return 100 * np.ones(ag.shape[0])
       states_score = -1 * density_module.evaluate_log_density(ag.astype(np.float32))
       if self.config.get('clip_density'):
         states_score = np.clip(states_score, -self.config.clip_density, self.config.clip_density)
