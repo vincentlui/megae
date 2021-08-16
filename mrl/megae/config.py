@@ -63,12 +63,12 @@ def megae_config():
     config.actor_lr = 1e-3
     config.critic_lr = 1e-3
 
-    config.actor_weight_decay = 0.1
-    config.critic_weight_decay = 0.3
-    config.actor_weight_decay_expl = 0.1
-    config.critic_weight_decay_expl = 0.1
-    config.action_l2_regularization = 1e-1
-    config.action_l2_regularization_expl = 1e-1
+    config.actor_weight_decay = 1e-4
+    config.critic_weight_decay = 1e-4
+    config.actor_weight_decay_expl = 1e-4
+    config.critic_weight_decay_expl = 1e-4
+    config.action_l2_regularization = 1e-2
+    config.action_l2_regularization_expl = 1e-2
     config.target_network_update_freq = 10
     config.target_network_update_freq_expl = 1
     config.target_network_update_frac = 0.05
@@ -128,12 +128,12 @@ def testconfig():
     config.gamma_expl = 0.98
     config.actor_lr = 1e-3
     config.critic_lr = 1e-3
-    config.actor_weight_decay = 0.1
-    config.critic_weight_decay = 0.3
-    config.actor_weight_decay_expl = 0.1
-    config.critic_weight_decay_expl = 0.1
-    config.action_l2_regularization = 1e-1
-    config.action_l2_regularization_expl = 1e-1
+    config.actor_weight_decay = 1e-4
+    config.critic_weight_decay = 1e-4
+    config.actor_weight_decay_expl = 1e-4
+    config.critic_weight_decay_expl = 1e-4
+    config.action_l2_regularization = 1e-2
+    config.action_l2_regularization_expl = 1e-2
     config.target_network_update_freq = 10
     config.target_network_update_frac = 0.05
     config.optimize_every = 2
