@@ -50,7 +50,7 @@ class MegaeTrain(mrl.Module):
                 reward_expl = self.ag_curiosity.score_states(next_state) - reward_expl
             else:
                 reward_expl = self.ag_curiosity.score_states(next_state)
-            state, experience = debug_vectorized_experience(state, action, next_state, reward, done, info, context, next_context, reward_expl)
+            state, experience = debug_vectorized_experience(state, action, next_state, reward, done, info, context, context, reward_expl)
             context = next_context
             self.process_experience(experience)
 
