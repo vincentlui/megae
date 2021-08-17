@@ -92,6 +92,7 @@ def megae_config():
     config.reward_scale = 0.1
     config.emp_lr = 1e-2
     config.expl_diff = False
+    config.no_density = True
     return config
 
 def fetchconfig():
