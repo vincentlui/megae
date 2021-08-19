@@ -73,9 +73,9 @@ class OnlineHERBuffer(mrl.Module):
         reward = self.env.compute_reward(achieved, behavioral, {'s':state, 'ns':next_state}).reshape(-1, 1)
       else:
         behavioral = desired
-      if self.config.get('initial_explore') and len(self.replay_buffer) < self.config.initial_explore:
-        desired = exp.next_state['achieved_goal']
-        behavioral = exp.next_state['achieved_goal']
+      # if self.config.get('initial_explore') and len(self.replay_buffer) < self.config.initial_explore:
+      #   desired = exp.next_state['achieved_goal']
+      #   behavioral = exp.next_state['achieved_goal']
       for i in range(self.n_envs):
         self._subbuffers[i].append([
             state[i], action[i], reward[i], next_state[i], done[i], previous_achieved[i], achieved[i],

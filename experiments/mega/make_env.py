@@ -13,6 +13,7 @@ from envs.robotics.fetch.pick_obstacle import FetchPickObstacleEnv
 from envs.robotics.fetch.pick_and_throw import FetchPickAndThrowEnv
 from envs.robotics.fetch.push_noobstacle import FetchPushNoObstacleEnv
 from envs.robotics.fetch.push_obstacle import FetchPushObstacleEnv
+from envs.robotics.hand.manipulate import HandEggEnv, HandBlockEnv, HandPenEnv
 
 try:
   import envs.spritelu
@@ -138,6 +139,15 @@ def make_env(args):
   elif args.env.lower()=='fetchpushobstacle':
     env_fn = lambda: VanillaGoalEnv(FetchPushObstacleEnv(), max_step=args.env_max_step)
     eval_env_fn = lambda: VanillaGoalEnv(FetchPushObstacleEnv(), max_step=args.env_max_step)
+  elif args.env.lower()=='handegg':
+    env_fn = lambda: VanillaGoalEnv(HandEggEnv(), max_step=args.env_max_step)
+    eval_env_fn = lambda: VanillaGoalEnv(HandEggEnv(), max_step=args.env_max_step)
+  elif args.env.lower()=='handblock':
+    env_fn = lambda: VanillaGoalEnv(HandBlockEnv(), max_step=args.env_max_step)
+    eval_env_fn = lambda: VanillaGoalEnv(HandBlockEnv(), max_step=args.env_max_step)
+  elif args.env.lower()=='handpen':
+    env_fn = lambda: VanillaGoalEnv(HandPenEnv(), max_step=args.env_max_step)
+    eval_env_fn = lambda: VanillaGoalEnv(HandPenEnv(), max_step=args.env_max_step)
   else:
     env, external, internal = args.env.split('_')
     if external.lower() == 'all':
