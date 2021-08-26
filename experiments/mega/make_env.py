@@ -13,7 +13,7 @@ from envs.robotics.fetch.pick_obstacle import FetchPickObstacleEnv
 from envs.robotics.fetch.pick_and_throw import FetchPickAndThrowEnv
 from envs.robotics.fetch.push_noobstacle import FetchPushNoObstacleEnv
 from envs.robotics.fetch.push_obstacle import FetchPushObstacleEnv
-from envs.robotics.hand.manipulate import HandEggEnv, HandBlockEnv, HandPenEnv
+# from envs.robotics.hand.manipulate import HandEggEnv, HandBlockEnv, HandPenEnv
 
 try:
   import envs.spritelu
